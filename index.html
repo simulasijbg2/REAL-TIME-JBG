@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Laporan Real Time - Cabang Jombang</title>
+  <title>Generator Laporan Real Time - Cabang Jombang</title>
+  <!-- Library SheetJS untuk membaca & membuat file Excel (.xlsx / .xls) -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <style>
     :root {
       --bg: #f1f5f9;
@@ -279,13 +281,13 @@
     <div class="brand">
       <div class="badge-rt">RT</div>
       <div>
-        <h1>Laporan Real Time</h1>
-        <p>Resume per AM Cabang Jombang</p>
+        <h1>Generator Laporan Real Time</h1>
+        <p>Master Excel (.XLSX) Sinkron Otomatis di Semua Perangkat (PC &amp; HP)</p>
       </div>
     </div>
     <nav class="nav-tabs">
-      <button class="tab-btn active" onclick="switchTab('tab-laporan', this)">1. Input real time</button>
-      <button class="tab-btn" onclick="switchTab('tab-master', this)">2. Master Target</button>
+      <button class="tab-btn active" onclick="switchTab('tab-laporan', this)">1. Input &amp; Hasil Laporan</button>
+      <button class="tab-btn" onclick="switchTab('tab-master', this)">2. Master Target &amp; Thn Lalu (Excel)</button>
     </nav>
   </header>
 
@@ -320,11 +322,11 @@
             </div>
             <div class="form-grid">
               <div class="form-group">
-                <label>Tanggal Laporan</label>
+                <label>Tanggal Laporan (Otomatis Tarik Master)</label>
                 <input type="date" id="reportDate" onchange="onReportDateChange()" oninput="onReportDateChange()" />
               </div>
               <div class="form-group">
-                <label>Tanggal History Tahun Lalu</label>
+                <label>Tanggal History Tahun Lalu (Otomatis)</label>
                 <input type="text" id="lastYearLabel" readonly style="background:#f8fafc;" />
               </div>
               <div class="form-group">
@@ -346,7 +348,7 @@
             </div>
 
             <div class="form-group">
-              <label>Kategori Produk yang Dihitung</label>
+              <label>Kategori Produk yang Dihitung (Otomatis Dry, bisa dicentang kapan saja)</label>
               <div class="checkbox-list">
                 <label><input type="checkbox" class="cat-check" value="Dry" checked onchange="processAll()"> Dry</label>
                 <label><input type="checkbox" class="cat-check" value="Khusus" onchange="processAll()"> Khusus</label>
@@ -357,7 +359,7 @@
             </div>
 
             <div id="masterSyncNotice" class="status-bar">
-              Belum ada master terhubung untuk tanggal ini. Upload file master di menu Master.
+              Memeriksa master terpusat...
             </div>
           </div>
         </div>
@@ -380,8 +382,8 @@
 
           <div class="card">
             <div class="card-title">
-              <span>Ketikan Ringkasan</span>
-              <button type="button" class="btn-success" onclick="copyWAText()">Salin Teks</button>
+              <span>Ketikan Ringkasan WhatsApp (Otomatis)</span>
+              <button type="button" class="btn-success" onclick="copyWAText()">Salin Teks WA</button>
             </div>
             <textarea id="waOutput" class="mono" rows="16" readonly></textarea>
           </div>
@@ -389,27 +391,28 @@
       </div>
     </section>
 
-    <!-- TAB 2: MASTER TARGET & THN LALU (UPDATE SESEKALI SAJA) -->
+    <!-- TAB 2: MASTER TARGET & THN LALU (EXCEL .XLSX) -->
     <section id="tab-master" class="tab-panel">
       <div class="card">
         <div class="card-title">
-          <span>Master Target &amp; Histori Tahun Lalu </span>
+          <span>Master Target &amp; Histori Tahun Lalu (.XLSX / .XLS / .CSV)</span>
           <div class="btn-group" style="margin:0;">
-            <button type="button" onclick="downloadTemplateCSV()">Download Template CSV</button>
+            <button type="button" onclick="downloadTemplateExcel()">Download Template Excel (.XLSX)</button>
             <label class="file-label btn-success" style="color:#fff;">
-              Upload Master (.CSV )
-              <input type="file" id="masterFileInput" accept=".csv,.json,.txt" style="display:none" onchange="handleMasterFileUpload(event)" />
+              Upload Master Excel (.XLSX)
+              <input type="file" id="masterFileInput" accept=".xlsx,.xls,.csv,.json" style="display:none" onchange="handleMasterFileUpload(event)" />
             </label>
-            <button type="button" onclick="exportMasterJSON()">Backup CSV</button>
+            <button type="button" onclick="exportMasterExcel()">Export / Backup Excel (.XLSX)</button>
+            <button type="button" class="btn-primary" onclick="loadRemoteMasterFile(true)">Muat Ulang Server (master.xlsx)</button>
           </div>
         </div>
 
         <div class="info-box">
-          <strong>Terhubung Otomatis ke Tanggal Laporan:</strong> Cukup upload file Master <code>TOTAL</code> per tanggal, nilai <code>THN LALU</code> dan <code>TARGET</code> pada baris <strong>TOTAL</strong> bawah otomatis mengambil data master tanggal tersebut.
+          <strong>Cara Upload Sekali Saja untuk Semua HP &amp; PC:</strong> Simpan file Excel Anda dengan nama <code>master.xlsx</code> lalu upload ke repository GitHub Anda (sejajar dengan <code>index.html</code>). Setiap kali halaman ini dibuka di HP atau PC mana pun, data <code>master.xlsx</code> otomatis dimuat tanpa perlu upload ulang di tiap perangkat!
         </div>
 
         <div id="masterUploadStatus" class="status-bar" style="margin-bottom:14px;">
-          Siap mengunggah file Master per Tanggal (.CSV).
+          Memeriksa file master terpusat (master.xlsx)...
         </div>
 
         <div class="master-controls">
@@ -480,7 +483,7 @@
   </main>
 
   <script>
-    const STORAGE_KEY = 'jbg_realtime_master_v10';
+    const STORAGE_KEY = 'jbg_realtime_master_v11';
     let masterStore = {};
 
     function getTodayIso() {
@@ -539,9 +542,35 @@
       return `${d} ${months[m - 1]} ${y}`;
     }
 
+    // Konversi nomor serial tanggal Excel (misal 46327) ke YYYY-MM-DD
+    function excelSerialToIso(serial) {
+      if (typeof serial !== 'number' || !isFinite(serial) || serial < 20000) return '';
+      const utcDays = Math.floor(serial - 25569);
+      const utcValue = utcDays * 86400 * 1000;
+      const dt = new Date(utcValue);
+      if (isNaN(dt.getTime())) return '';
+      const y = dt.getUTCFullYear();
+      const m = String(dt.getUTCMonth() + 1).padStart(2, '0');
+      const d = String(dt.getUTCDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
     function normalizeIsoDate(rawDate) {
-      if (!rawDate) return '';
+      if (rawDate === null || rawDate === undefined || rawDate === '') return '';
+      if (typeof rawDate === 'number') {
+        return excelSerialToIso(rawDate);
+      }
+      if (rawDate instanceof Date && !isNaN(rawDate.getTime())) {
+        const y = rawDate.getFullYear();
+        const m = String(rawDate.getMonth() + 1).padStart(2, '0');
+        const d = String(rawDate.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+      }
+
       const s = String(rawDate).trim();
+      if (/^\d{5}$/.test(s)) {
+        return excelSerialToIso(parseInt(s, 10));
+      }
       if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(s)) {
         const [y, m, d] = s.split('-');
         return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
@@ -626,52 +655,68 @@
       };
     }
 
-    function downloadTemplateCSV() {
-      const csvLines = [
-        'tanggal,kode_am,nama_am,thn_lalu,target',
-        '2026-11-01,AMS,ALMAS BUDI PRASETIYO,13568739,13893908',
-        '2026-11-01,WNY,WIDI NURYANTO,15333893,16220128',
-        '2026-11-01,TOTAL,TOTAL,14083655,15053684'
+    // =========================================================
+    // EXCEL (.XLSX / .XLS) TEMPLATE, PARSER & EXPORT
+    // =========================================================
+    function downloadTemplateExcel() {
+      if (typeof XLSX === 'undefined') {
+        alert('Library Excel belum termuat. Pastikan koneksi internet aktif.');
+        return;
+      }
+      const sampleRows = [
+        { tanggal: '2026-11-01', kode_am: 'AMS', nama_am: 'ALMAS BUDI PRASETIYO', thn_lalu: 13568739, target: 13893908 },
+        { tanggal: '2026-11-01', kode_am: 'WNY', nama_am: 'WIDI NURYANTO', thn_lalu: 15333893, target: 16220128 },
+        { tanggal: '2026-11-01', kode_am: 'TOTAL', nama_am: 'TOTAL', thn_lalu: 14083655, target: 15053684 }
       ];
-      const blob = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = 'Template_Master_Per_Tanggal.csv';
-      link.click();
+      const ws = XLSX.utils.json_to_sheet(sampleRows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Master');
+      XLSX.writeFile(wb, 'master.xlsx');
     }
 
-    function splitCSVLine(line, delimiter) {
-      const cells = [];
-      let cur = '';
-      let inQuotes = false;
-      for (let i = 0; i < line.length; i++) {
-        const ch = line[i];
-        if (ch === '"') {
-          if (inQuotes && line[i + 1] === '"') {
-            cur += '"';
-            i++;
-          } else {
-            inQuotes = !inQuotes;
-          }
-        } else if (ch === delimiter && !inQuotes) {
-          cells.push(cur.trim());
-          cur = '';
-        } else {
-          cur += ch;
+    function exportMasterExcel() {
+      if (typeof XLSX === 'undefined') {
+        alert('Library Excel belum termuat. Pastikan koneksi internet aktif.');
+        return;
+      }
+      const dates = Object.keys(masterStore).sort();
+      if (dates.length === 0) {
+        alert('Belum ada data master untuk di-export.');
+        return;
+      }
+      const flatRows = [];
+      for (const dt of dates) {
+        const entry = masterStore[dt];
+        for (const r of (entry.rows || [])) {
+          flatRows.push({
+            tanggal: dt,
+            kode_am: r.code,
+            nama_am: r.name,
+            thn_lalu: Number(r.lastYear) || 0,
+            target: Number(r.target) || 0
+          });
+        }
+        if (entry.customTotal) {
+          flatRows.push({
+            tanggal: dt,
+            kode_am: 'TOTAL',
+            nama_am: 'TOTAL',
+            thn_lalu: Number(entry.customTotal.lastYear) || 0,
+            target: Number(entry.customTotal.target) || 0
+          });
         }
       }
-      cells.push(cur.trim());
-      return cells;
+      const ws = XLSX.utils.json_to_sheet(flatRows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Master');
+      XLSX.writeFile(wb, 'master.xlsx');
     }
 
-    function parseMasterCSVText(csvText, fallbackDate) {
-      const lines = csvText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-      if (lines.length === 0) return {};
-
-      const delimiter = lines[0].includes(';') && !lines[0].includes(',') ? ';' : ',';
-      const firstCells = splitCSVLine(lines[0], delimiter).map(h => h.toLowerCase().replace(/[^a-z0-9_]/g, ''));
-
+    function parseRowsMatrixToStore(matrixRows, fallbackDate) {
+      if (!matrixRows || matrixRows.length === 0) return {};
+      const firstCells = matrixRows[0].map(h => String(h || '').toLowerCase().trim().replace(/[^a-z0-9_]/g, ''));
       const hasHeader = firstCells.some(h => ['tanggal', 'date', 'tgl', 'kode_am', 'kode', 'am', 'nama_am', 'nama', 'thn_lalu', 'target'].includes(h));
+
       const idxDate = hasHeader ? firstCells.findIndex(h => ['tanggal', 'date', 'tgl'].includes(h)) : 0;
       const idxCode = hasHeader ? firstCells.findIndex(h => ['kode_am', 'kode', 'am'].includes(h)) : 1;
       const idxName = hasHeader ? firstCells.findIndex(h => ['nama_am', 'nama'].includes(h)) : 2;
@@ -681,11 +726,14 @@
       const startIdx = hasHeader ? 1 : 0;
       const finalByDate = {};
 
-      for (let i = startIdx; i < lines.length; i++) {
-        const cols = splitCSVLine(lines[i], delimiter);
-        const isoDate = normalizeIsoDate(idxDate >= 0 ? cols[idxDate] : '') || normalizeIsoDate(fallbackDate) || getTodayIso();
-        const code = (idxCode >= 0 ? cols[idxCode] : '').toUpperCase();
-        const name = (idxName >= 0 ? cols[idxName] : '') || code;
+      for (let i = startIdx; i < matrixRows.length; i++) {
+        const cols = matrixRows[i];
+        if (!cols || cols.length === 0) continue;
+
+        const rawDate = idxDate >= 0 ? cols[idxDate] : '';
+        const isoDate = normalizeIsoDate(rawDate) || normalizeIsoDate(fallbackDate) || getTodayIso();
+        const code = String(idxCode >= 0 ? (cols[idxCode] || '') : '').trim().toUpperCase();
+        const name = String(idxName >= 0 ? (cols[idxName] || '') : '').trim() || code;
         const lastYear = parseLooseNumber(idxLY >= 0 ? cols[idxLY] : 0);
         const target = parseLooseNumber(idxTgt >= 0 ? cols[idxTgt] : 0);
 
@@ -704,25 +752,77 @@
       return finalByDate;
     }
 
+    function parseExcelArrayBuffer(arrayBuffer, fallbackDate) {
+      const workbook = XLSX.read(arrayBuffer, { type: 'array', cellDates: false });
+      const sheetName = workbook.SheetNames.find(n => n.toLowerCase() === 'master') || workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+      return parseRowsMatrixToStore(matrix, fallbackDate);
+    }
+
+    function applyImportedDates(importedDates, sourceLabel) {
+      const dateKeys = Object.keys(importedDates).sort();
+      if (dateKeys.length === 0) return 0;
+      for (const dt of dateKeys) {
+        masterStore[dt] = importedDates[dt];
+      }
+      saveStore();
+
+      const currentReportDate = normalizeIsoDate(document.getElementById('reportDate').value) || getTodayIso();
+      const targetDate = dateKeys.includes(currentReportDate) ? currentReportDate : currentReportDate;
+      syncMasterToDate(targetDate, false);
+      onReportDateChange();
+
+      const statusEl = document.getElementById('masterUploadStatus');
+      statusEl.className = 'status-bar ok';
+      statusEl.textContent = `Berhasil memuat "${sourceLabel}" (${dateKeys.length} tanggal). Master langsung terhubung ke input hasil laporan!`;
+      return dateKeys.length;
+    }
+
     function handleMasterFileUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
 
       const activeDate = normalizeIsoDate(document.getElementById('reportDate').value || document.getElementById('masterDatePicker').value || getTodayIso());
       const statusEl = document.getElementById('masterUploadStatus');
-      const reader = new FileReader();
+      const fileNameLower = file.name.toLowerCase();
 
+      if (fileNameLower.endsWith('.xlsx') || fileNameLower.endsWith('.xls')) {
+        if (typeof XLSX === 'undefined') {
+          statusEl.className = 'status-bar warn';
+          statusEl.textContent = 'Library pembaca Excel belum termuat. Periksa koneksi internet Anda.';
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          try {
+            const importedDates = parseExcelArrayBuffer(e.target.result, activeDate);
+            const count = applyImportedDates(importedDates, file.name);
+            if (count === 0) {
+              statusEl.className = 'status-bar warn';
+              statusEl.textContent = 'File Excel terbaca, tetapi tidak ditemukan baris data AM yang valid.';
+            }
+          } catch (err) {
+            statusEl.className = 'status-bar warn';
+            statusEl.textContent = 'Gagal membaca file Excel: ' + err.message;
+          }
+          event.target.value = '';
+        };
+        reader.readAsArrayBuffer(file);
+        return;
+      }
+
+      // Fallback untuk .csv / .json
+      const reader = new FileReader();
       reader.onload = function(e) {
-        const content = e.target.result;
         try {
           let importedDates = {};
-          if (file.name.toLowerCase().endsWith('.json')) {
-            const parsedJson = JSON.parse(content);
+          if (fileNameLower.endsWith('.json')) {
+            const parsedJson = JSON.parse(e.target.result);
             for (const [dtKey, val] of Object.entries(parsedJson)) {
               const iso = normalizeIsoDate(dtKey) || activeDate;
               const rowsList = Array.isArray(val) ? val : (val.rows || []);
               let customTotal = (!Array.isArray(val) && val.customTotal) ? val.customTotal : null;
-
               const cleanRows = [];
               for (const r of rowsList) {
                 const c = (r.code || '').toUpperCase();
@@ -735,42 +835,71 @@
                   cleanRows.push({ code: c || n, name: n || c, lastYear: ly, target: tgt });
                 }
               }
-
               importedDates[iso] = { rows: cleanRows, customTotal };
             }
           } else {
-            importedDates = parseMasterCSVText(content, activeDate);
+            const wb = XLSX.read(e.target.result, { type: 'string' });
+            const matrix = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: '' });
+            importedDates = parseRowsMatrixToStore(matrix, activeDate);
           }
-
-          const dateKeys = Object.keys(importedDates).sort();
-          if (dateKeys.length === 0) {
+          const count = applyImportedDates(importedDates, file.name);
+          if (count === 0) {
             statusEl.className = 'status-bar warn';
             statusEl.textContent = 'File terbaca, tetapi tidak ditemukan baris data AM yang valid.';
-            return;
           }
-
-          for (const dt of dateKeys) {
-            masterStore[dt] = importedDates[dt];
-          }
-          saveStore();
-
-          const currentReportDate = normalizeIsoDate(document.getElementById('reportDate').value);
-          const targetDate = dateKeys.includes(currentReportDate) ? currentReportDate : activeDate;
-          syncMasterToDate(targetDate, false);
-          onReportDateChange();
-
-          statusEl.className = 'status-bar ok';
-          statusEl.textContent = `Berhasil mengunggah "${file.name}" (${dateKeys.length} tanggal). Master langsung terhubung ke input hasil laporan!`;
         } catch (err) {
           statusEl.className = 'status-bar warn';
           statusEl.textContent = 'Gagal memproses file master: ' + err.message;
         }
         event.target.value = '';
       };
-
       reader.readAsText(file);
     }
 
+    // =========================================================
+    // OTOMATIS TARIK MASTER TERPUSAT (master.xlsx) DARI SERVER / GITHUB
+    // =========================================================
+    async function loadRemoteMasterFile(isManualClick = false) {
+      const statusEl = document.getElementById('masterUploadStatus');
+      const activeDate = normalizeIsoDate(document.getElementById('reportDate').value) || getTodayIso();
+
+      // Lewati fetch otomatis jika dibuka langsung dari file:// lokal PC
+      if (window.location.protocol === 'file:') {
+        statusEl.className = 'status-bar';
+        statusEl.textContent = 'Mode file lokal PC: gunakan tombol "Upload Master Excel (.XLSX)" untuk memuat master.';
+        return;
+      }
+
+      if (isManualClick) {
+        statusEl.className = 'status-bar';
+        statusEl.textContent = 'Mengambil master.xlsx terbaru dari server...';
+      }
+
+      try {
+        const cacheBust = '?t=' + Date.now();
+        const res = await fetch('./master.xlsx' + cacheBust);
+        if (res.ok && typeof XLSX !== 'undefined') {
+          const buf = await res.arrayBuffer();
+          const importedDates = parseExcelArrayBuffer(buf, activeDate);
+          const count = applyImportedDates(importedDates, 'master.xlsx (Server Terpusat)');
+          if (count > 0) return;
+        }
+      } catch (err) {
+        console.warn('Tidak dapat mengambil master.xlsx dari server:', err);
+      }
+
+      if (Object.keys(masterStore).length > 0) {
+        statusEl.className = 'status-bar ok';
+        statusEl.textContent = `Menggunakan data master tersimpan (${Object.keys(masterStore).length} tanggal). Upload "master.xlsx" ke GitHub agar sinkron otomatis ke semua HP.`;
+      } else {
+        statusEl.className = 'status-bar warn';
+        statusEl.textContent = 'File "master.xlsx" belum ditemukan di server GitHub. Upload "master.xlsx" sekali ke GitHub atau upload manual di sini.';
+      }
+    }
+
+    // =========================================================
+    // PARSER TEKS BOT (.TXT) & AVERAGE SPD PER AM
+    // =========================================================
     function parseBotSales(text) {
       const lines = text.split(/\r?\n/);
       let currentBranch = 'DEFAULT';
@@ -898,10 +1027,10 @@
         notice.textContent = `Master aktif terhubung untuk tanggal ${formatHeaderDate(reportDate)} (History: ${lastYearLabel}, ${masterEntry.rows.length} AM${hasCustomTotal ? ', TOTAL dari Master' : ''}).`;
       } else {
         notice.className = 'status-bar warn';
-        notice.innerHTML = `Belum ada master untuk tanggal ${formatHeaderDate(reportDate)}. <a href="#" onclick="jumpToMasterDate('${reportDate}');return false;" style="color:#1d4ed8;font-weight:700;">Upload / Isi Sekali di Master &rarr;</a>`;
+        notice.innerHTML = `Belum ada master untuk tanggal ${formatHeaderDate(reportDate)}. <a href="#" onclick="jumpToMasterDate('${reportDate}');return false;" style="color:#1d4ed8;font-weight:700;">Atur / Upload Excel Master &rarr;</a>`;
       }
 
-      // Hanya tampilkan AM yang ada di master dan memiliki Target & History (lastYear > 0 dan target > 0)
+      // Hanya tampilkan AM yang memiliki Target & History (lastYear > 0 dan target > 0)
       const combined = masterEntry.rows
         .map(m => ({
           code: m.code,
@@ -924,7 +1053,6 @@
       const avgTgtFromRows = combined.reduce((s, r) => s + r.target, 0) / rowCount;
       const avgSpd = combined.reduce((s, r) => s + r.spd, 0) / rowCount;
 
-      // Prioritaskan nilai TOTAL dari data master per tanggal jika tersedia
       const totLastYear = (masterEntry.customTotal && isFinite(masterEntry.customTotal.lastYear))
         ? masterEntry.customTotal.lastYear
         : (combined.length ? avgLYFromRows : 0);
@@ -1360,15 +1488,7 @@
       document.getElementById('excelPasteBox').value = '';
     }
 
-    function exportMasterJSON() {
-      const blob = new Blob([JSON.stringify(masterStore, null, 2)], { type: 'application/json' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = 'Backup_Master_Target_Jombang.json';
-      link.click();
-    }
-
-    // Inisialisasi Awal Bersih
+    // Inisialisasi Awal & Otomatis Tarik master.xlsx dari GitHub
     initStorage();
     const initialDate = getTodayIso();
     document.getElementById('reportDate').value = initialDate;
@@ -1376,6 +1496,7 @@
     document.getElementById('rawInput').value = '';
     syncMasterToDate(initialDate, false);
     processAll();
+    loadRemoteMasterFile(false);
   </script>
 </body>
 </html>
