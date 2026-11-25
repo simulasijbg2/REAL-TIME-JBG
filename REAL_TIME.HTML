@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Laporan Real Time - Cabang Jombang</title>
+  <style>
+    :root {
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #cbd5e1;
+      --primary: #1d4ed8;
+      --primary-hover: #1e40af;
+      --success: #15803d;
+      --danger: #b91c1c;
+      --header-bg: #0f172a;
+    }
+
+    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { margin: 0; background: var(--bg); color: var(--text); }
+
+    /* Top Navbar */
+    .navbar {
+      background: var(--header-bg);
+      color: #fff;
+      padding: 14px 24px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .badge-rt {
+      background: #facc15;
+      color: #000;
+      font-weight: 800;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 15px;
+    }
+    .brand h1 { margin: 0; font-size: 17px; }
+    .brand p { margin: 2px 0 0; font-size: 12px; color: #94a3b8; }
+
+    .nav-tabs { display: flex; gap: 8px; }
+    .tab-btn {
+      background: #1e293b;
+      color: #cbd5e1;
+      border: 1px solid #334155;
+      padding: 8px 16px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      transition: 0.2s;
+    }
+    .tab-btn.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    /* Container & Layout */
+    .container { max-width: 1400px; margin: 20px auto; padding: 0 16px 40px; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .grid-main {
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+    @media (max-width: 1024px) {
+      .grid-main { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      padding: 18px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      margin-bottom: 16px;
+    }
+    .card-title {
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      color: #1e293b;
+      margin: 0 0 12px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    /* Buttons */
+    .btn-group { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    button, .file-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: #f8fafc;
+      color: #1e293b;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+    button:hover, .file-label:hover { background: #e2e8f0; }
+    .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-success { background: var(--success); color: #fff; border-color: var(--success); }
+    .btn-success:hover { background: #166534; }
+    .btn-danger { background: #fee2e2; color: var(--danger); border-color: #fecaca; }
+    .btn-danger:hover { background: #fecaca; }
+
+    textarea, input[type="text"], input[type="date"], input[type="number"], select {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+      background: #fff;
+      color: var(--text);
+    }
+    textarea.mono {
+      font-family: Consolas, 'Courier New', monospace;
+      font-size: 12px;
+      line-height: 1.4;
+      resize: vertical;
+    }
+
+    .status-bar {
+      margin-top: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 7px 10px;
+      border-radius: 6px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      color: var(--muted);
+    }
+    .status-bar.ok { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
+    .status-bar.warn { background: #fef9c3; color: #854d0e; border-color: #fef08a; }
+
+    .info-box {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e3a8a;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 12px;
+      line-height: 1.45;
+      margin-bottom: 14px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .form-group { margin-bottom: 10px; }
+    .form-group label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      color: #475569;
+      margin-bottom: 4px;
+    }
+
+    .checkbox-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .checkbox-list label {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: #f8fafc;
+      padding: 5px 10px;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+      cursor: pointer;
+    }
+
+    /* Preview Canvas Container */
+    .canvas-wrapper {
+      overflow-x: auto;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #fff;
+      padding: 10px;
+      text-align: center;
+    }
+    canvas {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 0 auto;
+    }
+
+    /* Master Table */
+    .master-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: flex-end;
+      margin-bottom: 14px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .saved-dates {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 14px;
+      align-items: center;
+    }
+    .date-chip {
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      background: #e2e8f0;
+      color: #1e293b;
+      cursor: pointer;
+      border: none;
+    }
+    .date-chip.active { background: var(--primary); color: #fff; }
+
+    table.master-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    table.master-table th, table.master-table td {
+      border: 1px solid #cbd5e1;
+      padding: 6px 8px;
+      text-align: left;
+    }
+    table.master-table th {
+      background: #fef08a;
+      font-weight: 800;
+      text-align: center;
+    }
+    table.master-table input {
+      padding: 5px 7px;
+      font-size: 13px;
+    }
+    table.master-table input.num-input {
+      text-align: right;
+      font-family: Consolas, monospace;
+    }
+    .tfoot-row td {
+      background: #fef08a;
+      font-weight: 800;
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <header class="navbar">
+    <div class="brand">
+      <div class="badge-rt">RT</div>
+      <div>
+        <h1>Laporan Real Time</h1>
+        <p>Resume per AM Cabang Jombang</p>
+      </div>
+    </div>
+    <nav class="nav-tabs">
+      <button class="tab-btn active" onclick="switchTab('tab-laporan', this)">1. Input real time</button>
+      <button class="tab-btn" onclick="switchTab('tab-master', this)">2. Master Target</button>
+    </nav>
+  </header>
+
+  <main class="container">
+    <!-- TAB 1: LAPORAN -->
+    <section id="tab-laporan" class="tab-panel active">
+      <div class="grid-main">
+        <!-- KOLOM KIRI: INPUT -->
+        <div>
+          <div class="card">
+            <div class="card-title">
+              <span>1. Input Data Sales Bot (.TXT)</span>
+            </div>
+            <div class="btn-group">
+              <label class="file-label">
+                Upload .TXT
+                <input type="file" id="fileInput" accept=".txt,text/plain" style="display:none" />
+              </label>
+              <button type="button" class="btn-primary" onclick="processAll()">Proses Data</button>
+            </div>
+            <textarea id="rawInput" class="mono" rows="12" placeholder="Paste hasil teks dari posrtreg05bot di sini atau upload file .txt..."></textarea>
+            <div id="parseStatus" class="status-bar">Menunggu input data...</div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">
+              <span>2. Tanggal Laporan &amp; Pengaturan</span>
+              <label style="font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:4px;cursor:pointer;">
+                <input type="checkbox" id="autoSyncDateFromText" checked onchange="onReportDateChange()" />
+                Ikuti Tanggal di Teks
+              </label>
+            </div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Tanggal Laporan</label>
+                <input type="date" id="reportDate" onchange="onReportDateChange()" oninput="onReportDateChange()" />
+              </div>
+              <div class="form-group">
+                <label>Tanggal History Tahun Lalu</label>
+                <input type="text" id="lastYearLabel" readonly style="background:#f8fafc;" />
+              </div>
+              <div class="form-group">
+                <label>Jam Laporan</label>
+                <input type="text" id="reportTime" value="12:00" oninput="processAll()" />
+              </div>
+              <div class="form-group">
+                <label>Nama Cabang (Tabel)</label>
+                <input type="text" id="branchName" value="CAB JOMBANG" oninput="processAll()" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Mode Perhitungan SPD dari .TXT (AM Sama Antar Cabang)</label>
+              <select id="spdCalcMode" onchange="processAll()">
+                <option value="avg_branch" selected>Average Antar Cabang (Tiap cabang dijumlah per kategori, lalu dirata-rata)</option>
+                <option value="avg_all_rows">Average Semua Baris Terpilih (Rata-rata langsung seluruh baris AM yang muncul)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Kategori Produk yang Dihitung</label>
+              <div class="checkbox-list">
+                <label><input type="checkbox" class="cat-check" value="Dry" checked onchange="processAll()"> Dry</label>
+                <label><input type="checkbox" class="cat-check" value="Khusus" onchange="processAll()"> Khusus</label>
+                <label><input type="checkbox" class="cat-check" value="Klik Dry" onchange="processAll()"> Klik Dry</label>
+                <label><input type="checkbox" class="cat-check" value="Klik Food" onchange="processAll()"> Klik Food</label>
+                <label><input type="checkbox" class="cat-check" value="Apka" onchange="processAll()"> Apka</label>
+              </div>
+            </div>
+
+            <div id="masterSyncNotice" class="status-bar">
+              Belum ada master terhubung untuk tanggal ini. Upload file master di menu Master.
+            </div>
+          </div>
+        </div>
+
+        <!-- KOLOM KANAN: OUTPUT GAMBAR & TEKS WA -->
+        <div>
+          <div class="card">
+            <div class="card-title">
+              <span>Preview Gambar Laporan (Format Excel)</span>
+              <div class="btn-group" style="margin:0;">
+                <button type="button" onclick="copyCanvasImage()">Salin Gambar</button>
+                <button type="button" class="btn-primary" onclick="downloadCanvasPNG()">Download PNG</button>
+              </div>
+            </div>
+            <div id="copyFeedback" class="status-bar" style="margin-top:0;margin-bottom:10px;display:none;"></div>
+            <div class="canvas-wrapper">
+              <canvas id="reportCanvas"></canvas>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">
+              <span>Ketikan Ringkasan</span>
+              <button type="button" class="btn-success" onclick="copyWAText()">Salin Teks</button>
+            </div>
+            <textarea id="waOutput" class="mono" rows="16" readonly></textarea>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: MASTER TARGET & THN LALU (UPDATE SESEKALI SAJA) -->
+    <section id="tab-master" class="tab-panel">
+      <div class="card">
+        <div class="card-title">
+          <span>Master Target &amp; Histori Tahun Lalu </span>
+          <div class="btn-group" style="margin:0;">
+            <button type="button" onclick="downloadTemplateCSV()">Download Template CSV</button>
+            <label class="file-label btn-success" style="color:#fff;">
+              Upload Master (.CSV )
+              <input type="file" id="masterFileInput" accept=".csv,.json,.txt" style="display:none" onchange="handleMasterFileUpload(event)" />
+            </label>
+            <button type="button" onclick="exportMasterJSON()">Backup CSV</button>
+          </div>
+        </div>
+
+        <div class="info-box">
+          <strong>Terhubung Otomatis ke Tanggal Laporan:</strong> Cukup upload file Master <code>TOTAL</code> per tanggal, nilai <code>THN LALU</code> dan <code>TARGET</code> pada baris <strong>TOTAL</strong> bawah otomatis mengambil data master tanggal tersebut.
+        </div>
+
+        <div id="masterUploadStatus" class="status-bar" style="margin-bottom:14px;">
+          Siap mengunggah file Master per Tanggal (.CSV).
+        </div>
+
+        <div class="master-controls">
+          <div>
+            <label style="display:block;font-size:11px;font-weight:700;margin-bottom:4px;">Tanggal Master Aktif</label>
+            <div style="display:flex;gap:6px;">
+              <button type="button" onclick="shiftMasterDate(-1)">&lt; H-1</button>
+              <input type="date" id="masterDatePicker" onchange="syncMasterToDate(this.value, true)" style="width:160px;" />
+              <button type="button" onclick="shiftMasterDate(1)">H+1 &gt;</button>
+            </div>
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;font-weight:700;margin-bottom:4px;">Tanggal History Thn Lalu (Otomatis)</label>
+            <input type="text" id="masterSubLabel" readonly style="width:165px;background:#f8fafc;" />
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;font-weight:700;margin-bottom:4px;">Salin Dari Tanggal Lain</label>
+            <div style="display:flex;gap:6px;">
+              <select id="copyFromDateSelect" style="width:150px;"></select>
+              <button type="button" onclick="copyFromAnotherDate()">Salin</button>
+            </div>
+          </div>
+          <div style="margin-left:auto;display:flex;gap:6px;">
+            <button type="button" onclick="addMasterRow()">+ Tambah AM</button>
+            <button type="button" class="btn-primary" onclick="saveCurrentMaster()">Simpan Perubahan</button>
+          </div>
+        </div>
+
+        <div class="saved-dates" id="savedDatesList"></div>
+
+        <div style="margin-bottom:12px;">
+          <details>
+            <summary style="cursor:pointer;font-size:12px;font-weight:700;color:#1d4ed8;">
+              Klik untuk Paste Cepat 2 Kolom (THN LALU &amp; TARGET) langsung dari Excel
+            </summary>
+            <div style="margin-top:8px;display:flex;gap:8px;">
+              <textarea id="excelPasteBox" class="mono" rows="5" placeholder="Blok kolom THN LALU dan TARGET di Excel sesuai urutan baris AM di bawah, lalu Paste di sini..."></textarea>
+              <button type="button" class="btn-success" onclick="applyExcelPaste()">Terapkan Paste</button>
+            </div>
+          </details>
+        </div>
+
+        <div style="overflow-x:auto;">
+          <table class="master-table">
+            <thead>
+              <tr>
+                <th style="width:50px;">NO</th>
+                <th style="width:120px;">KODE AM</th>
+                <th>NAMA LENGKAP AM</th>
+                <th style="width:180px;">THN LALU</th>
+                <th style="width:180px;">TARGET</th>
+                <th style="width:70px;">AKSI</th>
+              </tr>
+            </thead>
+            <tbody id="masterTableBody"></tbody>
+            <tfoot>
+              <tr class="tfoot-row">
+                <td colspan="3" style="text-align:center;">TOTAL / AVERAGE</td>
+                <td id="masterTotalLastYear">0</td>
+                <td id="masterTotalTarget">0</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const STORAGE_KEY = 'jbg_realtime_master_v10';
+    let masterStore = {};
+
+    function getTodayIso() {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      const d = String(now.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    function initStorage() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          masterStore = JSON.parse(raw);
+        }
+      } catch (e) {
+        masterStore = {};
+      }
+      if (!masterStore || typeof masterStore !== 'object') {
+        masterStore = {};
+      }
+    }
+
+    function saveStore() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(masterStore));
+      } catch (e) {
+        console.warn('LocalStorage penuh atau diblokir:', e);
+      }
+    }
+
+    function formatHeaderDate(isoDate) {
+      const norm = normalizeIsoDate(isoDate);
+      if (!norm) return '';
+      const parts = norm.split('-');
+      if (parts.length !== 3) return '';
+      const y = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10);
+      const d = parseInt(parts[2], 10);
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      if (!months[m - 1] || isNaN(d) || isNaN(y)) return '';
+      return `${d} ${months[m - 1]} ${y}`;
+    }
+
+    function formatLastYearFullDate(isoDate) {
+      const norm = normalizeIsoDate(isoDate);
+      if (!norm) return '';
+      const parts = norm.split('-');
+      if (parts.length !== 3) return '';
+      const y = parseInt(parts[0], 10) - 1;
+      const m = parseInt(parts[1], 10);
+      const d = parseInt(parts[2], 10);
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      if (!months[m - 1] || isNaN(d) || isNaN(y)) return '';
+      return `${d} ${months[m - 1]} ${y}`;
+    }
+
+    function normalizeIsoDate(rawDate) {
+      if (!rawDate) return '';
+      const s = String(rawDate).trim();
+      if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(s)) {
+        const [y, m, d] = s.split('-');
+        return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+      }
+      const slashOrDash = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](20\d{2})$/);
+      if (slashOrDash) {
+        const p1 = parseInt(slashOrDash[1], 10);
+        const p2 = parseInt(slashOrDash[2], 10);
+        const year = slashOrDash[3];
+        let dd = p1, mm = p2;
+        if (p1 <= 12 && p2 > 12) {
+          mm = p1;
+          dd = p2;
+        }
+        return `${year}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
+      }
+
+      const monthMap = {
+        jan: '01', feb: '02', mar: '03', apr: '04', mei: '05', may: '05',
+        jun: '06', jul: '07', agu: '08', aug: '08', sep: '09',
+        okt: '10', oct: '10', nov: '11', des: '12', dec: '12'
+      };
+      const textMonth = s.match(/^(\d{1,2})[\s\-]+([A-Za-z]{3,9})[\s\-]+(20\d{2})$/);
+      if (textMonth) {
+        const dd = textMonth[1].padStart(2, '0');
+        const mm = monthMap[textMonth[2].slice(0, 3).toLowerCase()];
+        if (mm) return `${textMonth[3]}-${mm}-${dd}`;
+      }
+      return '';
+    }
+
+    function extractIsoDateFromText(text) {
+      if (!text) return '';
+      const isoMatch = text.match(/\b(20\d{2}-\d{1,2}-\d{1,2})\b/);
+      if (isoMatch) return normalizeIsoDate(isoMatch[1]);
+
+      const dmyMatch = text.match(/\b(\d{1,2}[\/\-]\d{1,2}[\/\-]20\d{2})\b/);
+      if (dmyMatch) return normalizeIsoDate(dmyMatch[1]);
+
+      const textMonthMatch = text.match(/\b(\d{1,2}[\s\-]+[A-Za-z]{3,9}[\s\-]+20\d{2})\b/);
+      if (textMonthMatch) return normalizeIsoDate(textMonthMatch[1]);
+
+      return '';
+    }
+
+    function parseLooseNumber(val) {
+      if (typeof val === 'number') return isFinite(val) ? val : 0;
+      if (!val) return 0;
+      let str = String(val).trim();
+      const isNegative = /^\(.*\)$/.test(str);
+      str = str.replace(/[^\d.-]/g, '');
+      const num = parseFloat(str);
+      if (!isFinite(num)) return 0;
+      return isNegative ? -Math.abs(num) : num;
+    }
+
+    function findMasterKeyForDate(isoDate) {
+      const norm = normalizeIsoDate(isoDate);
+      if (!norm) return null;
+      if (masterStore[norm]) return norm;
+      for (const k of Object.keys(masterStore)) {
+        if (normalizeIsoDate(k) === norm) return k;
+      }
+      return null;
+    }
+
+    function getMasterEntryForDate(isoDate) {
+      const matchedKey = findMasterKeyForDate(isoDate);
+      if (matchedKey) {
+        return {
+          found: true,
+          matchedKey,
+          rows: masterStore[matchedKey].rows || [],
+          customTotal: masterStore[matchedKey].customTotal || null
+        };
+      }
+      return {
+        found: false,
+        matchedKey: null,
+        rows: [],
+        customTotal: null
+      };
+    }
+
+    function downloadTemplateCSV() {
+      const csvLines = [
+        'tanggal,kode_am,nama_am,thn_lalu,target',
+        '2026-11-01,AMS,ALMAS BUDI PRASETIYO,13568739,13893908',
+        '2026-11-01,WNY,WIDI NURYANTO,15333893,16220128',
+        '2026-11-01,TOTAL,TOTAL,14083655,15053684'
+      ];
+      const blob = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'Template_Master_Per_Tanggal.csv';
+      link.click();
+    }
+
+    function splitCSVLine(line, delimiter) {
+      const cells = [];
+      let cur = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') {
+          if (inQuotes && line[i + 1] === '"') {
+            cur += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (ch === delimiter && !inQuotes) {
+          cells.push(cur.trim());
+          cur = '';
+        } else {
+          cur += ch;
+        }
+      }
+      cells.push(cur.trim());
+      return cells;
+    }
+
+    function parseMasterCSVText(csvText, fallbackDate) {
+      const lines = csvText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+      if (lines.length === 0) return {};
+
+      const delimiter = lines[0].includes(';') && !lines[0].includes(',') ? ';' : ',';
+      const firstCells = splitCSVLine(lines[0], delimiter).map(h => h.toLowerCase().replace(/[^a-z0-9_]/g, ''));
+
+      const hasHeader = firstCells.some(h => ['tanggal', 'date', 'tgl', 'kode_am', 'kode', 'am', 'nama_am', 'nama', 'thn_lalu', 'target'].includes(h));
+      const idxDate = hasHeader ? firstCells.findIndex(h => ['tanggal', 'date', 'tgl'].includes(h)) : 0;
+      const idxCode = hasHeader ? firstCells.findIndex(h => ['kode_am', 'kode', 'am'].includes(h)) : 1;
+      const idxName = hasHeader ? firstCells.findIndex(h => ['nama_am', 'nama'].includes(h)) : 2;
+      const idxLY = hasHeader ? firstCells.findIndex(h => ['thn_lalu', 'thnlalu', 'histori', 'last_year', 'lastyear'].includes(h)) : 3;
+      const idxTgt = hasHeader ? firstCells.findIndex(h => ['target', 'tgt'].includes(h)) : 4;
+
+      const startIdx = hasHeader ? 1 : 0;
+      const finalByDate = {};
+
+      for (let i = startIdx; i < lines.length; i++) {
+        const cols = splitCSVLine(lines[i], delimiter);
+        const isoDate = normalizeIsoDate(idxDate >= 0 ? cols[idxDate] : '') || normalizeIsoDate(fallbackDate) || getTodayIso();
+        const code = (idxCode >= 0 ? cols[idxCode] : '').toUpperCase();
+        const name = (idxName >= 0 ? cols[idxName] : '') || code;
+        const lastYear = parseLooseNumber(idxLY >= 0 ? cols[idxLY] : 0);
+        const target = parseLooseNumber(idxTgt >= 0 ? cols[idxTgt] : 0);
+
+        if (!code && !name) continue;
+
+        if (!finalByDate[isoDate]) {
+          finalByDate[isoDate] = { rows: [], customTotal: null };
+        }
+
+        if (code === 'TOTAL' || name.toUpperCase() === 'TOTAL') {
+          finalByDate[isoDate].customTotal = { lastYear, target };
+        } else {
+          finalByDate[isoDate].rows.push({ code: code || name, name: name || code, lastYear, target });
+        }
+      }
+      return finalByDate;
+    }
+
+    function handleMasterFileUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const activeDate = normalizeIsoDate(document.getElementById('reportDate').value || document.getElementById('masterDatePicker').value || getTodayIso());
+      const statusEl = document.getElementById('masterUploadStatus');
+      const reader = new FileReader();
+
+      reader.onload = function(e) {
+        const content = e.target.result;
+        try {
+          let importedDates = {};
+          if (file.name.toLowerCase().endsWith('.json')) {
+            const parsedJson = JSON.parse(content);
+            for (const [dtKey, val] of Object.entries(parsedJson)) {
+              const iso = normalizeIsoDate(dtKey) || activeDate;
+              const rowsList = Array.isArray(val) ? val : (val.rows || []);
+              let customTotal = (!Array.isArray(val) && val.customTotal) ? val.customTotal : null;
+
+              const cleanRows = [];
+              for (const r of rowsList) {
+                const c = (r.code || '').toUpperCase();
+                const n = r.name || r.code || '';
+                const ly = parseLooseNumber(r.lastYear);
+                const tgt = parseLooseNumber(r.target);
+                if (c === 'TOTAL' || n.toUpperCase() === 'TOTAL') {
+                  customTotal = { lastYear: ly, target: tgt };
+                } else {
+                  cleanRows.push({ code: c || n, name: n || c, lastYear: ly, target: tgt });
+                }
+              }
+
+              importedDates[iso] = { rows: cleanRows, customTotal };
+            }
+          } else {
+            importedDates = parseMasterCSVText(content, activeDate);
+          }
+
+          const dateKeys = Object.keys(importedDates).sort();
+          if (dateKeys.length === 0) {
+            statusEl.className = 'status-bar warn';
+            statusEl.textContent = 'File terbaca, tetapi tidak ditemukan baris data AM yang valid.';
+            return;
+          }
+
+          for (const dt of dateKeys) {
+            masterStore[dt] = importedDates[dt];
+          }
+          saveStore();
+
+          const currentReportDate = normalizeIsoDate(document.getElementById('reportDate').value);
+          const targetDate = dateKeys.includes(currentReportDate) ? currentReportDate : activeDate;
+          syncMasterToDate(targetDate, false);
+          onReportDateChange();
+
+          statusEl.className = 'status-bar ok';
+          statusEl.textContent = `Berhasil mengunggah "${file.name}" (${dateKeys.length} tanggal). Master langsung terhubung ke input hasil laporan!`;
+        } catch (err) {
+          statusEl.className = 'status-bar warn';
+          statusEl.textContent = 'Gagal memproses file master: ' + err.message;
+        }
+        event.target.value = '';
+      };
+
+      reader.readAsText(file);
+    }
+
+    function parseBotSales(text) {
+      const lines = text.split(/\r?\n/);
+      let currentBranch = 'DEFAULT';
+      let currentCategory = 'Dry';
+      const records = [];
+
+      for (let rawLine of lines) {
+        const line = rawLine.trim();
+        if (!line) continue;
+
+        const branchMatch = line.match(/^Cabang\s*:\s*(.+)/i);
+        if (branchMatch) {
+          currentBranch = branchMatch[1].trim().toUpperCase();
+          continue;
+        }
+
+        const catMatch = line.match(/Jenis\s*Produk\s*:\s*(.+)/i);
+        if (catMatch) {
+          currentCategory = catMatch[1].trim();
+          continue;
+        }
+
+        if (/^=+$/.test(line) || /^AM\s*[\|¦]/i.test(line)) continue;
+
+        if (line.includes('|') || line.includes('¦')) {
+          const parts = line.split(/[\|¦]/).map(s => s.trim());
+          const amCode = (parts[0] || '').toUpperCase();
+          if (/^[A-Z]{2,5}$/.test(amCode) && amCode !== 'AM') {
+            const spd = parseLooseNumber(parts[1] || 0);
+            records.push({
+              branch: currentBranch,
+              am: amCode,
+              category: currentCategory,
+              spd: spd
+            });
+          }
+        }
+      }
+      return records;
+    }
+
+    function computeSpdMapAverage(parsedRecords, selectedCats, mode) {
+      const filtered = parsedRecords.filter(r => selectedCats.includes(r.category.toLowerCase()));
+      const spdMap = {};
+
+      if (mode === 'avg_all_rows') {
+        const grouped = {};
+        for (const r of filtered) {
+          if (!grouped[r.am]) grouped[r.am] = [];
+          grouped[r.am].push(r.spd);
+        }
+        for (const [am, vals] of Object.entries(grouped)) {
+          const sum = vals.reduce((a, b) => a + b, 0);
+          spdMap[am] = vals.length > 0 ? sum / vals.length : 0;
+        }
+        return spdMap;
+      }
+
+      const byAmAndBranch = {};
+      for (const r of filtered) {
+        if (!byAmAndBranch[r.am]) byAmAndBranch[r.am] = {};
+        byAmAndBranch[r.am][r.branch] = (byAmAndBranch[r.am][r.branch] || 0) + r.spd;
+      }
+
+      for (const [am, branchTotals] of Object.entries(byAmAndBranch)) {
+        const vals = Object.values(branchTotals);
+        const sum = vals.reduce((a, b) => a + b, 0);
+        spdMap[am] = vals.length > 0 ? sum / vals.length : 0;
+      }
+
+      return spdMap;
+    }
+
+    function fmtNum(n) {
+      return Math.round(n).toLocaleString('en-US');
+    }
+
+    function processAll() {
+      const rawText = document.getElementById('rawInput').value;
+
+      const autoSyncDate = document.getElementById('autoSyncDateFromText').checked;
+      if (autoSyncDate) {
+        const detectedIso = extractIsoDateFromText(rawText);
+        const dateInput = document.getElementById('reportDate');
+        if (detectedIso && normalizeIsoDate(dateInput.value) !== detectedIso) {
+          dateInput.value = detectedIso;
+          document.getElementById('lastYearLabel').value = formatLastYearFullDate(detectedIso);
+          syncMasterToDate(detectedIso, false);
+        }
+      }
+
+      const reportDate = normalizeIsoDate(document.getElementById('reportDate').value) || getTodayIso();
+      const lastYearLabel = formatLastYearFullDate(reportDate);
+      document.getElementById('lastYearLabel').value = lastYearLabel;
+
+      const reportTime = document.getElementById('reportTime').value || '12:00';
+      const branchName = document.getElementById('branchName').value || 'CAB JOMBANG';
+      const spdCalcMode = document.getElementById('spdCalcMode').value;
+
+      const selectedCats = Array.from(document.querySelectorAll('.cat-check:checked')).map(c => c.value.toLowerCase());
+      const parsed = parseBotSales(rawText);
+
+      const statusEl = document.getElementById('parseStatus');
+      if (!rawText.trim()) {
+        statusEl.className = 'status-bar';
+        statusEl.textContent = 'Menunggu input data...';
+      } else if (parsed.length === 0) {
+        statusEl.className = 'status-bar warn';
+        statusEl.textContent = 'Teks terdeteksi, namun belum ditemukan baris AM | SPD. Pastikan format bot sesuai.';
+      } else {
+        const uniqueAMs = new Set(parsed.map(p => p.am));
+        const uniqueBranches = new Set(parsed.map(p => p.branch));
+        statusEl.className = 'status-bar ok';
+        statusEl.textContent = `Membaca ${parsed.length} baris dari ${uniqueAMs.size} AM (${uniqueBranches.size} blok cabang) — SPD dihitung AVERAGE.`;
+      }
+
+      const spdMap = computeSpdMapAverage(parsed, selectedCats, spdCalcMode);
+
+      const masterEntry = getMasterEntryForDate(reportDate);
+      const notice = document.getElementById('masterSyncNotice');
+      const hasCustomTotal = !!(masterEntry.customTotal && isFinite(masterEntry.customTotal.lastYear) && isFinite(masterEntry.customTotal.target));
+
+      if (masterEntry.found) {
+        notice.className = 'status-bar ok';
+        notice.textContent = `Master aktif terhubung untuk tanggal ${formatHeaderDate(reportDate)} (History: ${lastYearLabel}, ${masterEntry.rows.length} AM${hasCustomTotal ? ', TOTAL dari Master' : ''}).`;
+      } else {
+        notice.className = 'status-bar warn';
+        notice.innerHTML = `Belum ada master untuk tanggal ${formatHeaderDate(reportDate)}. <a href="#" onclick="jumpToMasterDate('${reportDate}');return false;" style="color:#1d4ed8;font-weight:700;">Upload / Isi Sekali di Master &rarr;</a>`;
+      }
+
+      // Hanya tampilkan AM yang ada di master dan memiliki Target & History (lastYear > 0 dan target > 0)
+      const combined = masterEntry.rows
+        .map(m => ({
+          code: m.code,
+          name: m.name,
+          lastYear: Number(m.lastYear) || 0,
+          target: Number(m.target) || 0,
+          spd: spdMap[m.code] || 0
+        }))
+        .filter(r => r.lastYear > 0 && r.target > 0);
+
+      combined.forEach(row => {
+        row.growth = row.lastYear > 0 ? ((row.spd - row.lastYear) / row.lastYear) * 100 : 0;
+        row.ach = row.target > 0 ? (row.spd / row.target) * 100 : 0;
+      });
+
+      combined.sort((a, b) => b.ach - a.ach);
+
+      const rowCount = combined.length || 1;
+      const avgLYFromRows = combined.reduce((s, r) => s + r.lastYear, 0) / rowCount;
+      const avgTgtFromRows = combined.reduce((s, r) => s + r.target, 0) / rowCount;
+      const avgSpd = combined.reduce((s, r) => s + r.spd, 0) / rowCount;
+
+      // Prioritaskan nilai TOTAL dari data master per tanggal jika tersedia
+      const totLastYear = (masterEntry.customTotal && isFinite(masterEntry.customTotal.lastYear))
+        ? masterEntry.customTotal.lastYear
+        : (combined.length ? avgLYFromRows : 0);
+
+      const totTarget = (masterEntry.customTotal && isFinite(masterEntry.customTotal.target))
+        ? masterEntry.customTotal.target
+        : (combined.length ? avgTgtFromRows : 0);
+
+      const totSpd = combined.length ? avgSpd : 0;
+      const totGrowth = totLastYear > 0 ? ((totSpd - totLastYear) / totLastYear) * 100 : 0;
+      const totAch = totTarget > 0 ? (totSpd / totTarget) * 100 : 0;
+
+      drawReportCanvas({
+        headerDate: formatHeaderDate(reportDate),
+        lastYearLabel,
+        reportTime,
+        branchName,
+        rows: combined,
+        totals: { totLastYear, totTarget, totSpd, totGrowth, totAch }
+      });
+
+      generateWAText({
+        headerDate: formatHeaderDate(reportDate),
+        reportTime,
+        rows: combined,
+        totals: { totTarget, totSpd, totAch }
+      });
+    }
+
+    function getAchColor(ach, minAch, maxAch) {
+      if (maxAch <= minAch) return '#a7f3d0';
+      const ratio = Math.max(0, Math.min(1, (ach - minAch) / (maxAch - minAch)));
+      let r, g, b;
+      if (ratio < 0.5) {
+        const t = ratio * 2;
+        r = Math.round(248 + (253 - 248) * t);
+        g = Math.round(113 + (224 - 113) * t);
+        b = Math.round(113 + (71 - 113) * t);
+      } else {
+        const t = (ratio - 0.5) * 2;
+        r = Math.round(253 + (110 - 253) * t);
+        g = Math.round(224 + (231 - 224) * t);
+        b = Math.round(71 + (183 - 71) * t);
+      }
+      return `rgb(${r},${g},${b})`;
+    }
+
+    function drawReportCanvas({ headerDate, lastYearLabel, reportTime, branchName, rows, totals }) {
+      const canvas = document.getElementById('reportCanvas');
+      const ctx = canvas.getContext('2d');
+
+      const cols = [
+        { key: 'no', w: 42 },
+        { key: 'am', w: 235 },
+        { key: 'ly', w: 105 },
+        { key: 'tgt', w: 105 },
+        { key: 'spd', w: 105 },
+        { key: 'grw', w: 92 },
+        { key: 'ach', w: 68 },
+        { key: 'rnk', w: 66 }
+      ];
+      const totalW = cols.reduce((s, c) => s + c.w, 0);
+      const topOffset = 54;
+      const header1H = 38;
+      const header2H = 24;
+      const rowH = 25;
+      const totalH = topOffset + header1H + header2H + (rows.length + 1) * rowH + 6;
+
+      const scale = 2;
+      canvas.width = totalW * scale;
+      canvas.height = totalH * scale;
+      ctx.scale(scale, scale);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, totalW, totalH);
+
+      ctx.fillStyle = '#000000';
+      ctx.font = 'bold 14px Calibri, Arial, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(`REAL TIME ${headerDate}`, 50, 20);
+      ctx.fillText(branchName.toUpperCase(), 50, 42);
+
+      ctx.fillText(`Jam : ${reportTime}`, 495, 42);
+      ctx.font = 'italic bold 13px Calibri, Arial, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText('Sort', totalW - 8, 42);
+
+      function drawCell(x, y, w, h, text, opts = {}) {
+        if (opts.bg) {
+          ctx.fillStyle = opts.bg;
+          ctx.fillRect(x, y, w, h);
+        }
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x, y, w, h);
+
+        if (text !== null && text !== undefined) {
+          ctx.fillStyle = opts.color || '#000000';
+          ctx.font = `${opts.bold ? 'bold ' : ''}${opts.fontSize || 13}px Calibri, Arial, sans-serif`;
+          ctx.textBaseline = 'middle';
+          const lines = String(text).split('\n');
+          lines.forEach((ln, idx) => {
+            const ly = y + h / 2 + (idx - (lines.length - 1) / 2) * 14;
+            if (opts.align === 'left') {
+              ctx.textAlign = 'left';
+              ctx.fillText(ln, x + 6, ly);
+            } else if (opts.align === 'right') {
+              ctx.textAlign = 'right';
+              ctx.fillText(ln, x + w - 6, ly);
+            } else {
+              ctx.textAlign = 'center';
+              ctx.fillText(ln, x + w / 2, ly);
+            }
+          });
+        }
+      }
+
+      let y = topOffset;
+      const h1Titles = ['NO', 'AM', 'THN LALU', 'TARGET', 'SPD REAL\nTIME', 'Growth Vs', 'ACH', 'RANK'];
+      const h2Titles = ['NO', 'AM', lastYearLabel, headerDate, headerDate, 'Thn Lalu', '%', '-'];
+
+      let x = 0;
+      cols.forEach((c, i) => {
+        drawCell(x, y, c.w, header1H, h1Titles[i], { bg: '#ffff00', bold: true, fontSize: 13 });
+        drawCell(x, y + header1H, c.w, header2H, h2Titles[i], { bg: '#ffff00', bold: true, fontSize: 11.5 });
+        x += c.w;
+      });
+
+      y += header1H + header2H;
+
+      const achValues = rows.map(r => r.ach);
+      const minAch = Math.min(...achValues, 0);
+      const maxAch = Math.max(...achValues, 1);
+
+      rows.forEach((r, idx) => {
+        x = 0;
+        const rank = idx + 1;
+        const grwText = r.growth < 0 ? `(${Math.abs(r.growth).toFixed(2)})` : r.growth.toFixed(2);
+        const grwColor = r.growth < 0 ? '#dc2626' : '#15803d';
+        const achBg = getAchColor(r.ach, minAch, maxAch);
+
+        drawCell(x, y, cols[0].w, rowH, rank, { bold: true }); x += cols[0].w;
+        drawCell(x, y, cols[1].w, rowH, r.name, { align: 'left', fontSize: 12.5 }); x += cols[1].w;
+        drawCell(x, y, cols[2].w, rowH, fmtNum(r.lastYear), { align: 'right' }); x += cols[2].w;
+        drawCell(x, y, cols[3].w, rowH, fmtNum(r.target), { align: 'right' }); x += cols[3].w;
+        drawCell(x, y, cols[4].w, rowH, fmtNum(r.spd), { align: 'right' }); x += cols[4].w;
+        drawCell(x, y, cols[5].w, rowH, grwText, { align: 'right', color: grwColor }); x += cols[5].w;
+        drawCell(x, y, cols[6].w, rowH, r.ach.toFixed(2), { bg: achBg }); x += cols[6].w;
+
+        drawCell(x, y, cols[7].w, rowH, null);
+        const circleColor = rank <= 5 ? '#5b8a72' : (rank <= 10 ? '#d4b483' : '#c85a32');
+        ctx.beginPath();
+        ctx.arc(x + 16, y + rowH / 2, 7.5, 0, Math.PI * 2);
+        ctx.fillStyle = circleColor;
+        ctx.fill();
+        ctx.strokeStyle = '#555555';
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
+
+        ctx.fillStyle = '#000000';
+        ctx.font = 'bold 13px Calibri, Arial, sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(String(rank), x + cols[7].w - 10, y + rowH / 2);
+
+        y += rowH;
+      });
+
+      x = 0;
+      const totGrwText = totals.totGrowth < 0 ? `(${Math.abs(totals.totGrowth).toFixed(2)})` : totals.totGrowth.toFixed(2);
+      const totGrwColor = totals.totGrowth < 0 ? '#dc2626' : '#15803d';
+
+      drawCell(x, y, cols[0].w + cols[1].w, rowH, 'TOTAL', { bg: '#ffff00', bold: true });
+      x += cols[0].w + cols[1].w;
+      drawCell(x, y, cols[2].w, rowH, fmtNum(totals.totLastYear), { bg: '#ffff00', bold: true, align: 'right' }); x += cols[2].w;
+      drawCell(x, y, cols[3].w, rowH, fmtNum(totals.totTarget), { bg: '#ffff00', bold: true, align: 'right' }); x += cols[3].w;
+      drawCell(x, y, cols[4].w, rowH, fmtNum(totals.totSpd), { bg: '#ffff00', bold: true, align: 'right' }); x += cols[4].w;
+      drawCell(x, y, cols[5].w, rowH, totGrwText, { bg: '#ffff00', bold: true, align: 'right', color: totGrwColor }); x += cols[5].w;
+      drawCell(x, y, cols[6].w, rowH, totals.totAch.toFixed(2), { bg: '#ffff00', bold: true }); x += cols[6].w;
+      drawCell(x, y, cols[7].w, rowH, '', { bg: '#ffff00', bold: true });
+    }
+
+    function generateWAText({ headerDate, reportTime, rows, totals }) {
+      const top3 = rows.slice(0, 3);
+      const bot3 = rows.slice(-3).reverse();
+
+      const tgtJt = (totals.totTarget / 1000000).toFixed(2);
+      const spdJt = (totals.totSpd / 1000000).toFixed(2);
+      const achPct = totals.totAch.toFixed(2);
+
+      const lines = [
+        `Real Time ${headerDate}`,
+        `Cab Jombang - Jam : ${reportTime}`,
+        ``,
+        `3 AM Tertinggi :`,
+        `1.${top3[0] ? top3[0].code : '-'}`,
+        `2.${top3[1] ? top3[1].code : '-'}`,
+        `3.${top3[2] ? top3[2].code : '-'}`,
+        ``,
+        `3 AM Terbawah :`,
+        `1.${bot3[0] ? bot3[0].code : '-'}`,
+        `2.${bot3[1] ? bot3[1].code : '-'}`,
+        `3.${bot3[2] ? bot3[2].code : '-'}`,
+        ``,
+        ``,
+        `Target :\t ${tgtJt} \tJt`,
+        `Spd :\t ${spdJt} \tJt`,
+        `Ach :\t${achPct} \t%`
+      ];
+
+      document.getElementById('waOutput').value = lines.join('\n');
+    }
+
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        document.getElementById('rawInput').value = evt.target.result;
+        processAll();
+      };
+      reader.readAsText(file);
+    });
+
+    ['input', 'paste', 'keyup'].forEach(evtName => {
+      document.getElementById('rawInput').addEventListener(evtName, () => {
+        setTimeout(processAll, 10);
+      });
+    });
+
+    function onReportDateChange() {
+      const rawVal = document.getElementById('reportDate').value;
+      const d = normalizeIsoDate(rawVal) || getTodayIso();
+      document.getElementById('lastYearLabel').value = formatLastYearFullDate(d);
+      syncMasterToDate(d, false);
+      processAll();
+    }
+
+    function downloadCanvasPNG() {
+      const canvas = document.getElementById('reportCanvas');
+      const d = normalizeIsoDate(document.getElementById('reportDate').value) || 'laporan';
+      const link = document.createElement('a');
+      link.download = `RealTime_Jombang_${d}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+
+    function showCopyFeedback(msg, isOk = true) {
+      const el = document.getElementById('copyFeedback');
+      el.style.display = 'block';
+      el.className = 'status-bar ' + (isOk ? 'ok' : 'warn');
+      el.textContent = msg;
+    }
+
+    async function copyCanvasImage() {
+      const canvas = document.getElementById('reportCanvas');
+      try {
+        canvas.toBlob(async blob => {
+          await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+          showCopyFeedback('Gambar tabel berhasil disalin! Silakan langsung Paste (Ctrl+V) di WhatsApp.');
+        });
+      } catch (err) {
+        showCopyFeedback('Browser memblokir salin gambar langsung. Silakan gunakan tombol "Download PNG".', false);
+      }
+    }
+
+    function copyWAText() {
+      const ta = document.getElementById('waOutput');
+      ta.select();
+      navigator.clipboard.writeText(ta.value).then(() => {
+        showCopyFeedback('Ketikan WhatsApp berhasil disalin! Silakan Paste (Ctrl+V) di WhatsApp.');
+      });
+    }
+
+    function switchTab(tabId, btn) {
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      if (btn) btn.classList.add('active');
+      if (tabId === 'tab-master') {
+        const currentReportDate = normalizeIsoDate(document.getElementById('reportDate').value) || getTodayIso();
+        syncMasterToDate(currentReportDate, false);
+      }
+    }
+
+    function jumpToMasterDate(isoDate) {
+      const masterTabBtn = document.querySelectorAll('.tab-btn')[1];
+      switchTab('tab-master', masterTabBtn);
+      syncMasterToDate(normalizeIsoDate(isoDate), false);
+    }
+
+    function renderSavedDateChips(activeDate) {
+      const container = document.getElementById('savedDatesList');
+      const select = document.getElementById('copyFromDateSelect');
+      const dates = Object.keys(masterStore).sort();
+
+      container.innerHTML = '<span style="font-size:12px;font-weight:700;color:#475569;">Tanggal Tersimpan:</span>';
+      select.innerHTML = '';
+
+      dates.forEach(d => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'date-chip' + (d === activeDate ? ' active' : '');
+        chip.textContent = d;
+        chip.onclick = () => syncMasterToDate(d, true);
+        container.appendChild(chip);
+
+        const opt = document.createElement('option');
+        opt.value = d;
+        opt.textContent = d;
+        select.appendChild(opt);
+      });
+    }
+
+    function syncMasterToDate(isoDate, alsoUpdateReportDate = false) {
+      const norm = normalizeIsoDate(isoDate) || getTodayIso();
+      document.getElementById('masterDatePicker').value = norm;
+      document.getElementById('masterSubLabel').value = formatLastYearFullDate(norm);
+
+      const entry = getMasterEntryForDate(norm);
+      const tbody = document.getElementById('masterTableBody');
+      tbody.innerHTML = '';
+
+      entry.rows.forEach((r, i) => appendMasterRowDOM(i + 1, r));
+      recalcMasterTotals(entry.customTotal);
+      renderSavedDateChips(norm);
+
+      if (alsoUpdateReportDate) {
+        document.getElementById('reportDate').value = norm;
+        document.getElementById('lastYearLabel').value = formatLastYearFullDate(norm);
+        processAll();
+      }
+    }
+
+    function appendMasterRowDOM(no, rowData) {
+      const tbody = document.getElementById('masterTableBody');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="text-align:center;font-weight:700;">${no}</td>
+        <td><input type="text" class="m-code" value="${rowData.code || ''}" style="text-transform:uppercase;font-weight:700;" /></td>
+        <td><input type="text" class="m-name" value="${rowData.name || ''}" /></td>
+        <td><input type="number" class="m-ly num-input" value="${rowData.lastYear || 0}" oninput="recalcMasterTotals()" /></td>
+        <td><input type="number" class="m-tgt num-input" value="${rowData.target || 0}" oninput="recalcMasterTotals()" /></td>
+        <td style="text-align:center;"><button type="button" class="btn-danger" style="padding:4px 8px;" onclick="this.closest('tr').remove();recalcMasterTotals();">X</button></td>
+      `;
+      tbody.appendChild(tr);
+    }
+
+    function addMasterRow() {
+      const count = document.querySelectorAll('#masterTableBody tr').length;
+      appendMasterRowDOM(count + 1, { code: '', name: '', lastYear: 0, target: 0 });
+    }
+
+    function recalcMasterTotals(customTotalOverride = null) {
+      let sumLY = 0, sumTgt = 0;
+      const trs = document.querySelectorAll('#masterTableBody tr');
+      trs.forEach((tr, idx) => {
+        tr.children[0].textContent = idx + 1;
+        sumLY += parseFloat(tr.querySelector('.m-ly').value) || 0;
+        sumTgt += parseFloat(tr.querySelector('.m-tgt').value) || 0;
+      });
+      const count = trs.length || 1;
+      const avgLY = customTotalOverride && isFinite(customTotalOverride.lastYear) ? customTotalOverride.lastYear : (trs.length ? sumLY / count : 0);
+      const avgTgt = customTotalOverride && isFinite(customTotalOverride.target) ? customTotalOverride.target : (trs.length ? sumTgt / count : 0);
+
+      document.getElementById('masterTotalLastYear').textContent = fmtNum(avgLY);
+      document.getElementById('masterTotalTarget').textContent = fmtNum(avgTgt);
+    }
+
+    function saveCurrentMaster() {
+      const d = normalizeIsoDate(document.getElementById('masterDatePicker').value);
+      if (!d) return alert('Pilih tanggal terlebih dahulu!');
+      const rows = [];
+      let customTotal = null;
+
+      document.querySelectorAll('#masterTableBody tr').forEach(tr => {
+        const code = tr.querySelector('.m-code').value.trim().toUpperCase();
+        const name = tr.querySelector('.m-name').value.trim();
+        const lastYear = parseFloat(tr.querySelector('.m-ly').value) || 0;
+        const target = parseFloat(tr.querySelector('.m-tgt').value) || 0;
+        if (code === 'TOTAL' || name.toUpperCase() === 'TOTAL') {
+          customTotal = { lastYear, target };
+        } else if (code || name) {
+          rows.push({ code: code || name, name: name || code, lastYear, target });
+        }
+      });
+
+      masterStore[d] = { rows, customTotal };
+      saveStore();
+      renderSavedDateChips(d);
+
+      document.getElementById('reportDate').value = d;
+      document.getElementById('lastYearLabel').value = formatLastYearFullDate(d);
+      processAll();
+      alert(`Master Target & Tahun Lalu tanggal ${d} disimpan dan langsung terhubung ke laporan!`);
+    }
+
+    function shiftMasterDate(deltaDays) {
+      const cur = normalizeIsoDate(document.getElementById('masterDatePicker').value) || getTodayIso();
+      const dt = new Date(cur + 'T00:00:00');
+      dt.setDate(dt.getDate() + deltaDays);
+      const nextIso = dt.toISOString().slice(0, 10);
+      syncMasterToDate(nextIso, true);
+    }
+
+    function copyFromAnotherDate() {
+      const srcDate = document.getElementById('copyFromDateSelect').value;
+      const targetDate = normalizeIsoDate(document.getElementById('masterDatePicker').value);
+      if (!srcDate || !masterStore[srcDate]) return;
+      const clonedRows = JSON.parse(JSON.stringify(masterStore[srcDate].rows));
+      const tbody = document.getElementById('masterTableBody');
+      tbody.innerHTML = '';
+      clonedRows.forEach((r, i) => appendMasterRowDOM(i + 1, r));
+      recalcMasterTotals(masterStore[srcDate].customTotal || null);
+      alert(`Data berhasil disalin dari ${srcDate} ke form ${targetDate}. Klik "Simpan Perubahan" untuk menyimpan.`);
+    }
+
+    function applyExcelPaste() {
+      const raw = document.getElementById('excelPasteBox').value.trim();
+      if (!raw) return;
+      const lines = raw.split(/\r?\n/);
+      const trs = document.querySelectorAll('#masterTableBody tr');
+      lines.forEach((ln, idx) => {
+        if (!trs[idx]) return;
+        const cols = ln.split('\t');
+        if (cols[0] !== undefined) {
+          trs[idx].querySelector('.m-ly').value = parseLooseNumber(cols[0]);
+        }
+        if (cols[1] !== undefined) {
+          trs[idx].querySelector('.m-tgt').value = parseLooseNumber(cols[1]);
+        }
+      });
+      recalcMasterTotals();
+      document.getElementById('excelPasteBox').value = '';
+    }
+
+    function exportMasterJSON() {
+      const blob = new Blob([JSON.stringify(masterStore, null, 2)], { type: 'application/json' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'Backup_Master_Target_Jombang.json';
+      link.click();
+    }
+
+    // Inisialisasi Awal Bersih
+    initStorage();
+    const initialDate = getTodayIso();
+    document.getElementById('reportDate').value = initialDate;
+    document.getElementById('lastYearLabel').value = formatLastYearFullDate(initialDate);
+    document.getElementById('rawInput').value = '';
+    syncMasterToDate(initialDate, false);
+    processAll();
+  </script>
+</body>
+</html>
