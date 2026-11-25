@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Generator Laporan Real Time - Cabang Jombang</title>
+  <title>Laporan Real Time - Cabang Jombang</title>
   <!-- Library SheetJS untuk membaca & membuat file Excel (.xlsx / .xls) -->
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <style>
@@ -65,6 +65,9 @@
       border-color: var(--primary);
     }
 
+    /* Sembunyikan tombol / tab Master Target & Thn Lalu */
+    .hidden-master-tab { display: none !important; }
+
     /* Container & Layout */
     .container { max-width: 1400px; margin: 20px auto; padding: 0 16px 40px; }
     .tab-panel { display: none; }
@@ -125,6 +128,12 @@
     .btn-success:hover { background: #166534; }
     .btn-danger { background: #fee2e2; color: var(--danger); border-color: #fecaca; }
     .btn-danger:hover { background: #fecaca; }
+    .btn-mini {
+      padding: 2px 7px;
+      font-size: 10px;
+      border-radius: 4px;
+      line-height: 1.3;
+    }
 
     /* Sembunyikan tombol upload master target & history */
     .hidden-upload-master { display: none !important; }
@@ -176,6 +185,13 @@
       margin-bottom: 12px;
     }
     .form-group { margin-bottom: 10px; }
+    .label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
     .form-group label {
       display: block;
       font-size: 11px;
@@ -183,6 +199,7 @@
       color: #475569;
       margin-bottom: 4px;
     }
+    .label-row label { margin-bottom: 0; }
 
     .checkbox-list {
       display: flex;
@@ -284,13 +301,13 @@
     <div class="brand">
       <div class="badge-rt">RT</div>
       <div>
-        <h1>Generator Laporan Real Time</h1>
-        <p>Master Excel (.XLSX) Sinkron Otomatis di Semua Perangkat (PC &amp; HP)</p>
+        <h1>Laporan Real Time</h1>
+        <p>Resume AM Cabang Jombang</p>
       </div>
     </div>
     <nav class="nav-tabs">
       <button class="tab-btn active" onclick="switchTab('tab-laporan', this)">1. Input &amp; Hasil Laporan</button>
-      <button class="tab-btn" onclick="switchTab('tab-master', this)">2. Master Target &amp; Thn Lalu (Excel)</button>
+      <button class="tab-btn hidden-master-tab" onclick="switchTab('tab-master', this)">2. Master Target</button>
     </nav>
   </header>
 
@@ -325,16 +342,19 @@
             </div>
             <div class="form-grid">
               <div class="form-group">
-                <label>Tanggal Laporan (Otomatis Tarik Master)</label>
+                <label>Tanggal Laporan</label>
                 <input type="date" id="reportDate" onchange="onReportDateChange()" oninput="onReportDateChange()" />
               </div>
               <div class="form-group">
-                <label>Tanggal History Tahun Lalu (Otomatis)</label>
+                <label>Tanggal History Tahun Lalu</label>
                 <input type="text" id="lastYearLabel" readonly style="background:#f8fafc;" />
               </div>
               <div class="form-group">
-                <label>Jam Laporan</label>
-                <input type="text" id="reportTime" value="12:00" oninput="processAll()" />
+                <div class="label-row">
+                  <label for="reportTime">Jam Laporan</label>
+                  <button type="button" class="btn-mini" onclick="setCurrentTime()">Jam Sekarang</button>
+                </div>
+                <input type="text" id="reportTime" value="" placeholder="HH:MM" oninput="processAll()" />
               </div>
               <div class="form-group">
                 <label>Nama Cabang (Tabel)</label>
@@ -351,7 +371,7 @@
             </div>
 
             <div class="form-group">
-              <label>Kategori Produk yang Dihitung (Otomatis Dry, bisa dicentang kapan saja)</label>
+              <label>Kategori Produk yang Dihitung</label>
               <div class="checkbox-list">
                 <label><input type="checkbox" class="cat-check" value="Dry" checked onchange="processAll()"> Dry</label>
                 <label><input type="checkbox" class="cat-check" value="Khusus" onchange="processAll()"> Khusus</label>
@@ -362,7 +382,7 @@
             </div>
 
             <div id="masterSyncNotice" class="status-bar">
-              Memeriksa master terpusat...
+              Memeriksa master...
             </div>
           </div>
         </div>
@@ -371,10 +391,10 @@
         <div>
           <div class="card">
             <div class="card-title">
-              <span>Preview Gambar Laporan (Format Excel)</span>
+              <span>Preview Gambar Laporan </span>
               <div class="btn-group" style="margin:0;">
                 <button type="button" onclick="copyCanvasImage()">Salin Gambar</button>
-                <button type="button" class="btn-primary" onclick="downloadCanvasPNG()">Download PNG</button>
+                <button type="button" class="btn-primary" onclick="downloadCanvasPNG()">Download JPG</button>
               </div>
             </div>
             <div id="copyFeedback" class="status-bar" style="margin-top:0;margin-bottom:10px;display:none;"></div>
@@ -385,7 +405,7 @@
 
           <div class="card">
             <div class="card-title">
-              <span>Ketikan Ringkasan WhatsApp (Otomatis)</span>
+              <span>Ketikan Ringkasan</span>
               <button type="button" class="btn-success" onclick="copyWAText()">Salin Teks WA</button>
             </div>
             <textarea id="waOutput" class="mono" rows="16" readonly></textarea>
@@ -398,7 +418,7 @@
     <section id="tab-master" class="tab-panel">
       <div class="card">
         <div class="card-title">
-          <span>Master Target &amp; Histori Tahun Lalu (.XLSX / .XLS / .CSV)</span>
+          <span>Master Target &amp; Histori Tahun Lalu</span>
           <div class="btn-group" style="margin:0;">
             <button type="button" onclick="downloadTemplateExcel()">Download Template Excel (.XLSX)</button>
             <label class="file-label btn-success hidden-upload-master" style="color:#fff;">
@@ -486,7 +506,7 @@
   </main>
 
   <script>
-    const STORAGE_KEY = 'jbg_realtime_master_v12';
+    const STORAGE_KEY = 'jbg_realtime_master_v14';
     let masterStore = {};
 
     function getTodayIso() {
@@ -495,6 +515,18 @@
       const m = String(now.getMonth() + 1).padStart(2, '0');
       const d = String(now.getDate()).padStart(2, '0');
       return `${y}-${m}-${d}`;
+    }
+
+    function getCurrentTimeHHMM() {
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      return `${hh}:${mm}`;
+    }
+
+    function setCurrentTime() {
+      document.getElementById('reportTime').value = getCurrentTimeHHMM();
+      processAll();
     }
 
     function initStorage() {
@@ -994,7 +1026,8 @@
       const lastYearLabel = formatLastYearFullDate(reportDate);
       document.getElementById('lastYearLabel').value = lastYearLabel;
 
-      const reportTime = document.getElementById('reportTime').value || '12:00';
+      const timeInputVal = document.getElementById('reportTime').value.trim();
+      const reportTime = timeInputVal || getCurrentTimeHHMM();
       const branchName = document.getElementById('branchName').value || 'CAB JOMBANG';
       const spdCalcMode = document.getElementById('spdCalcMode').value;
 
@@ -1026,7 +1059,7 @@
         notice.textContent = `Master aktif terhubung untuk tanggal ${formatHeaderDate(reportDate)} (History: ${lastYearLabel}, ${masterEntry.rows.length} AM${hasCustomTotal ? ', TOTAL dari Master' : ''}).`;
       } else {
         notice.className = 'status-bar warn';
-        notice.innerHTML = `Belum ada master untuk tanggal ${formatHeaderDate(reportDate)}. <a href="#" onclick="jumpToMasterDate('${reportDate}');return false;" style="color:#1d4ed8;font-weight:700;">Cek Master &rarr;</a>`;
+        notice.textContent = `Belum ada data master untuk tanggal ${formatHeaderDate(reportDate)} pada file master.xlsx.`;
       }
 
       const combined = masterEntry.rows
@@ -1335,12 +1368,6 @@
       }
     }
 
-    function jumpToMasterDate(isoDate) {
-      const masterTabBtn = document.querySelectorAll('.tab-btn')[1];
-      switchTab('tab-master', masterTabBtn);
-      syncMasterToDate(normalizeIsoDate(isoDate), false);
-    }
-
     function renderSavedDateChips(activeDate) {
       const container = document.getElementById('savedDatesList');
       const select = document.getElementById('copyFromDateSelect');
@@ -1490,6 +1517,7 @@
     const initialDate = getTodayIso();
     document.getElementById('reportDate').value = initialDate;
     document.getElementById('lastYearLabel').value = formatLastYearFullDate(initialDate);
+    document.getElementById('reportTime').value = getCurrentTimeHHMM();
     document.getElementById('rawInput').value = '';
     syncMasterToDate(initialDate, false);
     processAll();
