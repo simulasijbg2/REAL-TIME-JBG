@@ -21,7 +21,14 @@
     }
 
     * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    body { margin: 0; background: var(--bg); color: var(--text); }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
 
     /* Top Navbar */
     .navbar {
@@ -69,7 +76,13 @@
     .hidden-master-tab { display: none !important; }
 
     /* Container & Layout */
-    .container { max-width: 1400px; margin: 20px auto; padding: 0 16px 40px; }
+    .container {
+      width: 100%;
+      max-width: 1400px;
+      margin: 20px auto;
+      padding: 0 16px 40px;
+      flex: 1;
+    }
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
 
@@ -292,6 +305,17 @@
       font-weight: 800;
       text-align: right;
     }
+
+    /* Footer */
+    .site-footer {
+      background: #ffffff;
+      border-top: 1px solid #e2e8f0;
+      padding: 14px 20px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+    }
   </style>
 </head>
 <body>
@@ -301,8 +325,8 @@
     <div class="brand">
       <div class="badge-rt">RT</div>
       <div>
-        <h1>Laporan Real Time</h1>
-        <p>Resume AM Cabang Jombang</p>
+        <h1>Generator Laporan Real Time</h1>
+        <p>Resume AM cabang Jombang</p>
       </div>
     </div>
     <nav class="nav-tabs">
@@ -319,7 +343,7 @@
         <div>
           <div class="card">
             <div class="card-title">
-              <span>1. Input Data Sales Bot (.TXT)</span>
+              <span>1. Input Data Sales Bot</span>
             </div>
             <div class="btn-group">
               <label class="file-label">
@@ -357,7 +381,7 @@
                 <input type="text" id="reportTime" value="" placeholder="HH:MM" oninput="processAll()" />
               </div>
               <div class="form-group">
-                <label>Nama Cabang (Tabel)</label>
+                <label>Nama Cabang</label>
                 <input type="text" id="branchName" value="CAB JOMBANG" oninput="processAll()" />
               </div>
             </div>
@@ -382,7 +406,7 @@
             </div>
 
             <div id="masterSyncNotice" class="status-bar">
-              Memeriksa master...
+              Memeriksa Target Dan History Th LL...
             </div>
           </div>
         </div>
@@ -391,7 +415,7 @@
         <div>
           <div class="card">
             <div class="card-title">
-              <span>Preview Gambar Laporan </span>
+              <span>Preview Gambar Laporan</span>
               <div class="btn-group" style="margin:0;">
                 <button type="button" onclick="copyCanvasImage()">Salin Gambar</button>
                 <button type="button" class="btn-primary" onclick="downloadCanvasPNG()">Download JPG</button>
@@ -406,7 +430,7 @@
           <div class="card">
             <div class="card-title">
               <span>Ketikan Ringkasan</span>
-              <button type="button" class="btn-success" onclick="copyWAText()">Salin Teks WA</button>
+              <button type="button" class="btn-success" onclick="copyWAText()">Salin Teks</button>
             </div>
             <textarea id="waOutput" class="mono" rows="16" readonly></textarea>
           </div>
@@ -420,9 +444,9 @@
         <div class="card-title">
           <span>Master Target &amp; Histori Tahun Lalu</span>
           <div class="btn-group" style="margin:0;">
-            <button type="button" onclick="downloadTemplateExcel()">Download Template Excel (.XLSX)</button>
+            <button type="button" onclick="downloadTemplateExcel()">Download Template</button>
             <label class="file-label btn-success hidden-upload-master" style="color:#fff;">
-              Upload Master Excel (.XLSX)
+              Upload Master Excel
               <input type="file" id="masterFileInput" accept=".xlsx,.xls,.csv,.json" style="display:none" onchange="handleMasterFileUpload(event)" />
             </label>
             <button type="button" onclick="exportMasterExcel()">Export / Backup Excel (.XLSX)</button>
@@ -505,8 +529,12 @@
     </section>
   </main>
 
+  <footer class="site-footer">
+    &copy; 2026 . Productivity Analysis Dev Jombang  -  Ari
+  </footer>
+
   <script>
-    const STORAGE_KEY = 'jbg_realtime_master_v14';
+    const STORAGE_KEY = 'jbg_realtime_master_v16';
     let masterStore = {};
 
     function getTodayIso() {
@@ -1267,7 +1295,7 @@
 
     function generateWAText({ headerDate, reportTime, rows, totals }) {
       const top3 = rows.slice(0, 3);
-      const bot3 = rows.slice(-3).reverse();
+      const bot3 = rows.length >= 3 ? rows.slice(-3) : [...rows];
 
       const tgtJt = (totals.totTarget / 1000000).toFixed(2);
       const spdJt = (totals.totSpd / 1000000).toFixed(2);
