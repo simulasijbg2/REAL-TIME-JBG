@@ -126,6 +126,9 @@
     .btn-danger { background: #fee2e2; color: var(--danger); border-color: #fecaca; }
     .btn-danger:hover { background: #fecaca; }
 
+    /* Sembunyikan tombol upload master target & history */
+    .hidden-upload-master { display: none !important; }
+
     textarea, input[type="text"], input[type="date"], input[type="number"], select {
       width: 100%;
       padding: 8px 10px;
@@ -398,7 +401,7 @@
           <span>Master Target &amp; Histori Tahun Lalu (.XLSX / .XLS / .CSV)</span>
           <div class="btn-group" style="margin:0;">
             <button type="button" onclick="downloadTemplateExcel()">Download Template Excel (.XLSX)</button>
-            <label class="file-label btn-success" style="color:#fff;">
+            <label class="file-label btn-success hidden-upload-master" style="color:#fff;">
               Upload Master Excel (.XLSX)
               <input type="file" id="masterFileInput" accept=".xlsx,.xls,.csv,.json" style="display:none" onchange="handleMasterFileUpload(event)" />
             </label>
@@ -408,7 +411,7 @@
         </div>
 
         <div class="info-box">
-          <strong>Cara Upload Sekali Saja untuk Semua HP &amp; PC:</strong> Simpan file Excel Anda dengan nama <code>master.xlsx</code> lalu upload ke repository GitHub Anda (sejajar dengan <code>index.html</code>). Setiap kali halaman ini dibuka di HP atau PC mana pun, data <code>master.xlsx</code> otomatis dimuat tanpa perlu upload ulang di tiap perangkat!
+          <strong>Terhubung Otomatis dari Server:</strong> File <code>master.xlsx</code> dimuat otomatis saat halaman dibuka di HP maupun PC. Jika ada pembaruan target atau histori, cukup perbarui <code>master.xlsx</code> di repository GitHub lalu klik <strong>Muat Ulang Server (master.xlsx)</strong> atau <em>refresh</em> halaman.
         </div>
 
         <div id="masterUploadStatus" class="status-bar" style="margin-bottom:14px;">
@@ -483,7 +486,7 @@
   </main>
 
   <script>
-    const STORAGE_KEY = 'jbg_realtime_master_v11';
+    const STORAGE_KEY = 'jbg_realtime_master_v12';
     let masterStore = {};
 
     function getTodayIso() {
@@ -542,7 +545,6 @@
       return `${d} ${months[m - 1]} ${y}`;
     }
 
-    // Konversi nomor serial tanggal Excel (misal 46327) ke YYYY-MM-DD
     function excelSerialToIso(serial) {
       if (typeof serial !== 'number' || !isFinite(serial) || serial < 20000) return '';
       const utcDays = Math.floor(serial - 25569);
@@ -769,8 +771,7 @@
       saveStore();
 
       const currentReportDate = normalizeIsoDate(document.getElementById('reportDate').value) || getTodayIso();
-      const targetDate = dateKeys.includes(currentReportDate) ? currentReportDate : currentReportDate;
-      syncMasterToDate(targetDate, false);
+      syncMasterToDate(currentReportDate, false);
       onReportDateChange();
 
       const statusEl = document.getElementById('masterUploadStatus');
@@ -812,7 +813,6 @@
         return;
       }
 
-      // Fallback untuk .csv / .json
       const reader = new FileReader();
       reader.onload = function(e) {
         try {
@@ -863,10 +863,9 @@
       const statusEl = document.getElementById('masterUploadStatus');
       const activeDate = normalizeIsoDate(document.getElementById('reportDate').value) || getTodayIso();
 
-      // Lewati fetch otomatis jika dibuka langsung dari file:// lokal PC
       if (window.location.protocol === 'file:') {
         statusEl.className = 'status-bar';
-        statusEl.textContent = 'Mode file lokal PC: gunakan tombol "Upload Master Excel (.XLSX)" untuk memuat master.';
+        statusEl.textContent = 'Mode file lokal PC: muat melalui server GitHub Pages agar master.xlsx terbaca otomatis.';
         return;
       }
 
@@ -890,10 +889,10 @@
 
       if (Object.keys(masterStore).length > 0) {
         statusEl.className = 'status-bar ok';
-        statusEl.textContent = `Menggunakan data master tersimpan (${Object.keys(masterStore).length} tanggal). Upload "master.xlsx" ke GitHub agar sinkron otomatis ke semua HP.`;
+        statusEl.textContent = `Menggunakan data master tersimpan (${Object.keys(masterStore).length} tanggal).`;
       } else {
         statusEl.className = 'status-bar warn';
-        statusEl.textContent = 'File "master.xlsx" belum ditemukan di server GitHub. Upload "master.xlsx" sekali ke GitHub atau upload manual di sini.';
+        statusEl.textContent = 'File "master.xlsx" belum ditemukan di server GitHub. Pastikan file master.xlsx sudah di-upload ke repository.';
       }
     }
 
@@ -1027,10 +1026,9 @@
         notice.textContent = `Master aktif terhubung untuk tanggal ${formatHeaderDate(reportDate)} (History: ${lastYearLabel}, ${masterEntry.rows.length} AM${hasCustomTotal ? ', TOTAL dari Master' : ''}).`;
       } else {
         notice.className = 'status-bar warn';
-        notice.innerHTML = `Belum ada master untuk tanggal ${formatHeaderDate(reportDate)}. <a href="#" onclick="jumpToMasterDate('${reportDate}');return false;" style="color:#1d4ed8;font-weight:700;">Atur / Upload Excel Master &rarr;</a>`;
+        notice.innerHTML = `Belum ada master untuk tanggal ${formatHeaderDate(reportDate)}. <a href="#" onclick="jumpToMasterDate('${reportDate}');return false;" style="color:#1d4ed8;font-weight:700;">Cek Master &rarr;</a>`;
       }
 
-      // Hanya tampilkan AM yang memiliki Target & History (lastYear > 0 dan target > 0)
       const combined = masterEntry.rows
         .map(m => ({
           code: m.code,
@@ -1488,7 +1486,6 @@
       document.getElementById('excelPasteBox').value = '';
     }
 
-    // Inisialisasi Awal & Otomatis Tarik master.xlsx dari GitHub
     initStorage();
     const initialDate = getTodayIso();
     document.getElementById('reportDate').value = initialDate;
