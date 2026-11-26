@@ -577,7 +577,7 @@
   </footer>
 
   <script>
-    const STORAGE_KEY = 'jbg_realtime_master_v23';
+    const STORAGE_KEY = 'jbg_realtime_master_v24';
     let masterStore = {};
 
     const CAT_KEY_MAP = {
@@ -777,7 +777,7 @@
       if (typeof val === 'number') return isFinite(val) ? val : 0;
       if (val === null || val === undefined || val === '') return 0;
       let str = String(val).trim();
-      if (!str) return 0;
+      if (!str || str === '-') return 0;
       const isNegative = /^\(.*\)$/.test(str);
       str = str.replace(/[^\d.-]/g, '');
       const num = parseFloat(str);
@@ -901,25 +901,25 @@
       const sampleRows = [
         {
           tanggal: '2026-11-26',
-          tgl_thn_lalu: '2025-11-27',
-          tgl_bln_lalu: '2026-10-26',
+          tgl_thn_lalu: '2025-11-26',
+          tgl_bln_lalu: '2026-10-29',
           kode_am: 'AMS',
           nama_am: 'ALMAS BUDI PRASETIYO',
-          thn_lalu_dry: 13568739,
-          thn_lalu_khusus: 1950000,
-          thn_lalu_klik_dry: 820000,
-          thn_lalu_klik_food: 350000,
-          thn_lalu_apka: 260000,
-          bln_lalu_dry: 13720000,
-          bln_lalu_khusus: 2050000,
-          bln_lalu_klik_dry: 890000,
-          bln_lalu_klik_food: 390000,
-          bln_lalu_apka: 290000,
-          target_dry: 13893908,
-          target_khusus: 2150000,
-          target_klik_dry: 950000,
-          target_klik_food: 420000,
-          target_apka: 310000
+          thn_lalu_dry: 8972887,
+          thn_lalu_khusus: 480829,
+          thn_lalu_klik_dry: 0,
+          thn_lalu_klik_food: 0,
+          thn_lalu_apka: 0,
+          bln_lalu_dry: 10226560,
+          bln_lalu_khusus: 728230,
+          bln_lalu_klik_dry: 0,
+          bln_lalu_klik_food: 0,
+          bln_lalu_apka: 0,
+          target_dry: 10886328,
+          target_khusus: 946699,
+          target_klik_dry: 0,
+          target_klik_food: 0,
+          target_apka: 0
         }
       ];
       const ws = XLSX.utils.json_to_sheet(sampleRows);
@@ -1222,8 +1222,8 @@
       }
 
       try {
-        const cacheBust = '?t=' + Date.now();
-        const res = await fetch('./master.xlsx' + cacheBust);
+        const cacheBust = '?t=' + Date.now() + '&r=' + Math.random().toString(36).slice(2);
+        const res = await fetch('./master.xlsx' + cacheBust, { cache: 'no-store' });
         if (res.ok && typeof XLSX !== 'undefined') {
           const buf = await res.arrayBuffer();
           const importedDates = parseExcelArrayBuffer(buf, activeDate);
@@ -1411,9 +1411,14 @@
         ? selectedCats.join(' + ')
         : 'Belum ada kategori dipilih';
 
+      const firstRow = combined[0];
+      const sampleInfo = firstRow
+        ? ` | Contoh ${firstRow.code}: LY=${fmtNum(firstRow.lastYear)}, LM=${fmtNum(firstRow.lastMonth)}, TGT=${fmtNum(firstRow.target)}`
+        : '';
+
       if (masterEntry.found) {
         notice.className = 'status-bar ok';
-        notice.textContent = `Master aktif ${formatHeaderDate(reportDate)} (Thn Lalu: ${lastYearLabel} • Bln Lalu: ${lastMonthLabel}) • Acuan: ${effectiveLabel}.`;
+        notice.textContent = `Master aktif ${formatHeaderDate(reportDate)} (Thn Lalu: ${lastYearLabel} • Bln Lalu: ${lastMonthLabel}) • Acuan: ${effectiveLabel}${sampleInfo}.`;
       } else {
         notice.className = 'status-bar warn';
         notice.textContent = `Belum ada data master untuk tanggal ${formatHeaderDate(reportDate)} pada file master.xlsx.`;
