@@ -706,397 +706,205 @@
       return `${y}-${m}-${d}`;
     }
 
-    function normalizeIsoDate(rawDate) {
-      if (rawDate === null || rawDate === undefined || rawDate === '') return '';
-      if (typeof rawDate === 'number') {
-        return excelSerialToIso(rawDate);
-      }
-      if (rawDate instanceof Date && !isNaN(rawDate.getTime())) {
-        const y = rawDate.getFullYear();
-        const m = String(rawDate.getMonth() + 1).padStart(2, '0');
-        const d = String(rawDate.getDate()).padStart(2, '0');
-        return `${y}-${m}-${d}`;
-      }
+   function normalizeIsoDate(rawDate) {
+  if (rawDate === null || rawDate === undefined || rawDate === '') return '';
 
-      const s = String(rawDate).trim();
-      if (/^\d{5}$/.test(s)) {
-        return excelSerialToIso(parseInt(s, 10));
-      }
-      if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(s)) {
-        const [y, m, d] = s.split('-');
-        return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
-      }
-      const slashOrDash = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](20\d{2})$/);
-      if (slashOrDash) {
-        const p1 = parseInt(slashOrDash[1], 10);
-        const p2 = parseInt(slashOrDash[2], 10);
-        const year = slashOrDash[3];
-        let dd = p1, mm = p2;
-        if (p1 <= 12 && p2 > 12) {
-          mm = p1;
-          dd = p2;
-        }
-        return `${year}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
-      }
+  if (typeof rawDate === 'number') {
+    return excelSerialToIso(rawDate);
+  }
 
-      const monthMap = {
-        jan: '01', feb: '02', mar: '03', apr: '04', mei: '05', may: '05',
-        jun: '06', jul: '07', agu: '08', aug: '08', sep: '09',
-        okt: '10', oct: '10', nov: '11', des: '12', dec: '12'
-      };
-      const textMonth = s.match(/^(\d{1,2})[\s\-]+([A-Za-z]{3,9})[\s\-]+(20\d{2})$/);
-      if (textMonth) {
-        const dd = textMonth[1].padStart(2, '0');
-        const mm = monthMap[textMonth[2].slice(0, 3).toLowerCase()];
-        if (mm) return `${textMonth[3]}-${mm}-${dd}`;
-      }
-      return '';
+  if (rawDate instanceof Date && !isNaN(rawDate.getTime())) {
+    const y = rawDate.getFullYear();
+    const m = String(rawDate.getMonth() + 1).padStart(2, '0');
+    const d = String(rawDate.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  const s = String(rawDate).trim();
+  if (!s) return '';
+
+  // Serial angka dalam bentuk string (mis. 46352)
+  if (/^\d{5}$/.test(s)) {
+    return excelSerialToIso(parseInt(s, 10));
+  }
+
+  // Format ISO YYYY-MM-DD atau YYYY-M-D
+  if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(s)) {
+    const [y, m, d] = s.split('-');
+    return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+  }
+
+  // Format angka dengan slash atau dash, mendukung tahun 2 atau 4 digit (mis. 26/11/26 atau 26-11-2026)
+  const slashOrDash = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if (slashOrDash) {
+    const p1 = parseInt(slashOrDash[1], 10);
+    const p2 = parseInt(slashOrDash[2], 10);
+    let yearStr = slashOrDash[3];
+
+    if (yearStr.length === 2) {
+      const yy = parseInt(yearStr, 10);
+      yearStr = (yy >= 70 ? '19' : '20') + yearStr.padStart(2, '0');
     }
 
-    function extractIsoDateFromText(text) {
-      if (!text) return '';
-      const isoMatch = text.match(/\b(20\d{2}-\d{1,2}-\d{1,2})\b/);
-      if (isoMatch) return normalizeIsoDate(isoMatch[1]);
-
-      const dmyMatch = text.match(/\b(\d{1,2}[\/\-]\d{1,2}[\/\-]20\d{2})\b/);
-      if (dmyMatch) return normalizeIsoDate(dmyMatch[1]);
-
-      const textMonthMatch = text.match(/\b(\d{1,2}[\s\-]+[A-Za-z]{3,9}[\s\-]+20\d{2})\b/);
-      if (textMonthMatch) return normalizeIsoDate(textMonthMatch[1]);
-
-      return '';
+    let dd = p1;
+    let mm = p2;
+    if (p1 <= 12 && p2 > 12) {
+      mm = p1;
+      dd = p2;
     }
 
-    function parseLooseNumber(val) {
-      if (typeof val === 'number') return isFinite(val) ? val : 0;
-      if (!val) return 0;
-      let str = String(val).trim();
-      const isNegative = /^\(.*\)$/.test(str);
-      str = str.replace(/[^\d.-]/g, '');
-      const num = parseFloat(str);
-      if (!isFinite(num)) return 0;
-      return isNegative ? -Math.abs(num) : num;
+    return `${yearStr}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
+  }
+
+  // Format teks nama bulan (Indonesia & Inggris), mendukung tahun 2 atau 4 digit (mis. 26-Nov-26 atau 1-Nov-26)
+  const monthMap = {
+    jan: '01', feb: '02', mar: '03', apr: '04', mei: '05', may: '05',
+    jun: '06', jul: '07', agu: '08', aug: '08', sep: '09',
+    okt: '10', oct: '10', nov: '11', des: '12', dec: '12'
+  };
+
+  const textMonth = s.match(/^(\d{1,2})[\s\-]+([A-Za-z]{3,9})[\s\-]+(\d{2,4})$/);
+  if (textMonth) {
+    const dd = textMonth[1].padStart(2, '0');
+    const mm = monthMap[textMonth[2].slice(0, 3).toLowerCase()];
+    let yearStr = textMonth[3];
+
+    if (yearStr.length === 2) {
+      const yy = parseInt(yearStr, 10);
+      yearStr = (yy >= 70 ? '19' : '20') + yearStr.padStart(2, '0');
     }
 
-    function extractCategoryValues(r, prefixList, fallbackSingleVal) {
-      const result = { dry: 0, khusus: 0, klikDry: 0, klikFood: 0, apka: 0 };
-      const nested = (r && typeof r === 'object') ? r : {};
-
-      for (const k of CAT_KEYS) {
-        let foundVal;
-        for (const p of prefixList) {
-          const snake = `${p}_${k.replace(/([A-Z])/g, '_$1').toLowerCase()}`;
-          const camel = `${p}${k[0].toUpperCase()}${k.slice(1)}`;
-          if (nested[snake] !== undefined && nested[snake] !== '') {
-            foundVal = nested[snake];
-            break;
-          }
-          if (nested[camel] !== undefined && nested[camel] !== '') {
-            foundVal = nested[camel];
-            break;
-          }
-          if (nested[p] && typeof nested[p] === 'object' && nested[p][k] !== undefined && nested[p][k] !== '') {
-            foundVal = nested[p][k];
-            break;
-          }
-        }
-        result[k] = foundVal !== undefined ? parseLooseNumber(foundVal) : 0;
-      }
-
-      if (fallbackSingleVal !== undefined && fallbackSingleVal !== null && fallbackSingleVal !== '' && result.dry === 0) {
-        result.dry = parseLooseNumber(fallbackSingleVal);
-      }
-
-      return result;
+    if (mm) {
+      return `${yearStr}-${mm}-${dd}`;
     }
+  }
 
-    function normalizeMasterRow(r) {
-      const lyObj = extractCategoryValues(r, ['lastYear', 'thn_lalu', 'thnlalu'], r.lastYear);
-      const lmObj = extractCategoryValues(r, ['lastMonth', 'bln_lalu', 'blnlalu'], r.lastMonth);
-      const tgtObj = extractCategoryValues(r, ['targets', 'target', 'tgt'], r.target);
+  return '';
+}
 
-      return {
-        code: (r.code || '').toUpperCase(),
-        name: r.name || r.code || '',
-        lastYears: lyObj,
-        lastMonths: lmObj,
-        targets: tgtObj
-      };
-    }
+function parseRowsMatrixToStore(matrixRows, fallbackDate) {
+  if (!matrixRows || matrixRows.length === 0) return {};
 
-    function getEffectiveCategoryKeys(selectedCats) {
-      if (!selectedCats || selectedCats.length === 0) return ['dry'];
-      const mapped = selectedCats
-        .map(c => CAT_KEY_MAP[String(c || '').toLowerCase().trim()])
-        .filter(Boolean);
-      const uniqueKeys = Array.from(new Set(mapped));
-      if (uniqueKeys.length === 0) return ['dry'];
-      if (uniqueKeys.includes('dry')) return ['dry'];
-      return uniqueKeys;
-    }
+  const firstCells = matrixRows[0].map(h =>
+    String(h || '')
+      .toLowerCase()
+      .replace(/[\r\n]+/g, '_')
+      .replace(/\s+/g, '_')
+      .replace(/[^a-z0-9_]/g, '')
+  );
 
-    function getEffectiveMetricsForItem(item, effectiveKeys) {
-      let lastYear = 0;
-      let lastMonth = 0;
-      let target = 0;
-      for (const k of effectiveKeys) {
-        lastYear += item.lastYears ? (Number(item.lastYears[k]) || 0) : 0;
-        lastMonth += item.lastMonths ? (Number(item.lastMonths[k]) || 0) : 0;
-        target += item.targets ? (Number(item.targets[k]) || 0) : 0;
-      }
-      return { lastYear, lastMonth, target };
-    }
+  const hasHeader = firstCells.some(h => [
+    'tanggal', 'date', 'tgl', 'tgl_thn_lalu', 'tgl_bln_lalu', 'kode_am', 'kode', 'am',
+    'nama_am', 'nama', 'thn_lalu', 'thn_lalu_dry', 'bln_lalu', 'bln_lalu_dry',
+    'target', 'target_dry', 'target_khusus', 'target_prodsus'
+  ].includes(h));
 
-    function findMasterKeyForDate(isoDate) {
-      const norm = normalizeIsoDate(isoDate);
-      if (!norm) return null;
-      if (masterStore[norm]) return norm;
-      for (const k of Object.keys(masterStore)) {
-        if (normalizeIsoDate(k) === norm) return k;
-      }
-      return null;
-    }
+  const findCol = (names, fallbackIdx) => {
+    if (!hasHeader) return fallbackIdx;
+    return firstCells.findIndex(h => names.includes(h));
+  };
 
-    function getMasterEntryForDate(isoDate) {
-      const matchedKey = findMasterKeyForDate(isoDate);
-      if (matchedKey) {
-        const entry = masterStore[matchedKey];
-        const refLYDate = normalizeIsoDate(entry.lastYearDate || entry.tgl_thn_lalu || '') || defaultLastYearIso(matchedKey);
-        const refLMDate = normalizeIsoDate(entry.lastMonthDate || entry.tgl_bln_lalu || '') || defaultLastMonthIso(matchedKey);
-        return {
-          found: true,
-          matchedKey,
-          lastYearDate: refLYDate,
-          lastMonthDate: refLMDate,
-          rows: (entry.rows || []).map(normalizeMasterRow),
-          customTotal: entry.customTotal ? normalizeMasterRow(entry.customTotal) : null
-        };
-      }
-      const norm = normalizeIsoDate(isoDate) || getTodayIso();
-      return {
-        found: false,
-        matchedKey: null,
-        lastYearDate: defaultLastYearIso(norm),
-        lastMonthDate: defaultLastMonthIso(norm),
+  const idxDate = findCol(['tanggal', 'date', 'tgl'], 0);
+  const idxRefLY = findCol(['tgl_thn_lalu', 'tanggal_thn_lalu', 'tgl_tahun_lalu', 'tanggal_tahun_lalu', 'ref_thn_lalu'], -1);
+  const idxRefLM = findCol(['tgl_bln_lalu', 'tanggal_bln_lalu', 'tgl_bulan_lalu', 'tanggal_bulan_lalu', 'ref_bln_lalu'], -1);
+  const idxCode = findCol(['kode_am', 'kode', 'am'], 1);
+  const idxName = findCol(['nama_am', 'nama'], 2);
+
+  const idxLYDry = findCol(['thn_lalu_dry', 'thnlaludry', 'thn_lalu', 'thnlalu', 'histori_thn_lalu', 'last_year'], 3);
+  const idxLYKhusus = findCol(['thn_lalu_khusus', 'thnlalukhusus', 'thn_lalu_prodsus', 'thnlaluprodsus'], -1);
+  const idxLYKlikDry = findCol(['thn_lalu_klik_dry', 'thnlaluklikdry'], -1);
+  const idxLYKlikFood = findCol(['thn_lalu_klik_food', 'thnlaluklikfood'], -1);
+  const idxLYApka = findCol(['thn_lalu_apka', 'thnlaluapka'], -1);
+
+  const idxLMDry = findCol(['bln_lalu_dry', 'blnlaludry', 'bln_lalu', 'blnlalu', 'bulan_lalu', 'last_month'], -1);
+  const idxLMKhusus = findCol(['bln_lalu_khusus', 'blnlalukhusus', 'bln_lalu_prodsus', 'blnlaluprodsus'], -1);
+  const idxLMKlikDry = findCol(['bln_lalu_klik_dry', 'blnlaluklikdry'], -1);
+  const idxLMKlikFood = findCol(['bln_lalu_klik_food', 'blnlaluklikfood'], -1);
+  const idxLMApka = findCol(['bln_lalu_apka', 'blnlaluapka'], -1);
+
+  const idxTgtDry = findCol(['target_dry', 'tgtdry', 'target', 'tgt'], idxLMDry >= 0 ? 5 : 4);
+  const idxTgtKhusus = findCol(['target_khusus', 'tgtkhusus', 'target_prodsus', 'tgtprodsus', 'prodsus', 'khusus'], -1);
+  const idxTgtKlikDry = findCol(['target_klik_dry', 'tgtklikdry', 'klik_dry'], -1);
+  const idxTgtKlikFood = findCol(['target_klik_food', 'tgtklikfood', 'klik_food'], -1);
+  const idxTgtApka = findCol(['target_apka', 'tgtapka', 'apka'], -1);
+
+  const startIdx = hasHeader ? 1 : 0;
+  const finalByDate = {};
+
+  for (let i = startIdx; i < matrixRows.length; i++) {
+    const cols = matrixRows[i];
+    if (!cols || cols.length === 0) continue;
+
+    const rawDate = idxDate >= 0 ? cols[idxDate] : '';
+    const isoDate = normalizeIsoDate(rawDate) || normalizeIsoDate(fallbackDate) || getTodayIso();
+    const refLY = normalizeIsoDate(idxRefLY >= 0 ? cols[idxRefLY] : '') || defaultLastYearIso(isoDate);
+    const refLM = normalizeIsoDate(idxRefLM >= 0 ? cols[idxRefLM] : '') || defaultLastMonthIso(isoDate);
+
+    const code = String(idxCode >= 0 ? (cols[idxCode] || '') : '').trim().toUpperCase();
+    const name = String(idxName >= 0 ? (cols[idxName] || '') : '').trim() || code;
+    if (!code && !name) continue;
+
+    const lastYears = {
+      dry: parseLooseNumber(idxLYDry >= 0 ? cols[idxLYDry] : 0),
+      khusus: parseLooseNumber(idxLYKhusus >= 0 ? cols[idxLYKhusus] : 0),
+      klikDry: parseLooseNumber(idxLYKlikDry >= 0 ? cols[idxLYKlikDry] : 0),
+      klikFood: parseLooseNumber(idxLYKlikFood >= 0 ? cols[idxLYKlikFood] : 0),
+      apka: parseLooseNumber(idxLYApka >= 0 ? cols[idxLYApka] : 0)
+    };
+
+    const lastMonths = {
+      dry: parseLooseNumber(idxLMDry >= 0 ? cols[idxLMDry] : 0),
+      khusus: parseLooseNumber(idxLMKhusus >= 0 ? cols[idxLMKhusus] : 0),
+      klikDry: parseLooseNumber(idxLMKlikDry >= 0 ? cols[idxLMKlikDry] : 0),
+      klikFood: parseLooseNumber(idxLMKlikFood >= 0 ? cols[idxLMKlikFood] : 0),
+      apka: parseLooseNumber(idxLMApka >= 0 ? cols[idxLMApka] : 0)
+    };
+
+    const targets = {
+      dry: parseLooseNumber(idxTgtDry >= 0 ? cols[idxTgtDry] : 0),
+      khusus: parseLooseNumber(idxTgtKhusus >= 0 ? cols[idxTgtKhusus] : 0),
+      klikDry: parseLooseNumber(idxTgtKlikDry >= 0 ? cols[idxTgtKlikDry] : 0),
+      klikFood: parseLooseNumber(idxTgtKlikFood >= 0 ? cols[idxTgtKlikFood] : 0),
+      apka: parseLooseNumber(idxTgtApka >= 0 ? cols[idxTgtApka] : 0)
+    };
+
+    if (!finalByDate[isoDate]) {
+      finalByDate[isoDate] = {
+        lastYearDate: refLY,
+        lastMonthDate: refLM,
         rows: [],
         customTotal: null
       };
+    } else {
+      if (idxRefLY >= 0 && normalizeIsoDate(cols[idxRefLY])) {
+        finalByDate[isoDate].lastYearDate = normalizeIsoDate(cols[idxRefLY]);
+      }
+      if (idxRefLM >= 0 && normalizeIsoDate(cols[idxRefLM])) {
+        finalByDate[isoDate].lastMonthDate = normalizeIsoDate(cols[idxRefLM]);
+      }
     }
 
-    // =========================================================
-    // EXCEL (.XLSX / .XLS) TEMPLATE, PARSER & EXPORT
-    // =========================================================
-    function downloadTemplateExcel() {
-      if (typeof XLSX === 'undefined') {
-        alert('Library Excel belum termuat. Pastikan koneksi internet aktif.');
-        return;
-      }
-      const sampleRows = [
-        {
-          tanggal: '2026-11-26',
-          tgl_thn_lalu: '2025-11-27',
-          tgl_bln_lalu: '2026-10-26',
-          kode_am: 'AMS',
-          nama_am: 'ALMAS BUDI PRASETIYO',
-          thn_lalu_dry: 13568739,
-          thn_lalu_khusus: 1950000,
-          thn_lalu_klik_dry: 820000,
-          thn_lalu_klik_food: 350000,
-          thn_lalu_apka: 260000,
-          bln_lalu_dry: 13720000,
-          bln_lalu_khusus: 2050000,
-          bln_lalu_klik_dry: 890000,
-          bln_lalu_klik_food: 390000,
-          bln_lalu_apka: 290000,
-          target_dry: 13893908,
-          target_khusus: 2150000,
-          target_klik_dry: 950000,
-          target_klik_food: 420000,
-          target_apka: 310000
-        },
-        {
-          tanggal: '2026-11-26',
-          tgl_thn_lalu: '2025-11-27',
-          tgl_bln_lalu: '2026-10-26',
-          kode_am: 'TOTAL',
-          nama_am: 'TOTAL',
-          thn_lalu_dry: 14083655,
-          thn_lalu_khusus: 2100000,
-          thn_lalu_klik_dry: 910000,
-          thn_lalu_klik_food: 400000,
-          thn_lalu_apka: 300000,
-          bln_lalu_dry: 14765000,
-          bln_lalu_khusus: 2200000,
-          bln_lalu_klik_dry: 980000,
-          bln_lalu_klik_food: 430000,
-          bln_lalu_apka: 320000,
-          target_dry: 15053684,
-          target_khusus: 2300000,
-          target_klik_dry: 1035000,
-          target_klik_food: 465000,
-          target_apka: 345000
-        }
-      ];
-      const ws = XLSX.utils.json_to_sheet(sampleRows);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Master');
-      XLSX.writeFile(wb, 'master.xlsx');
+    const rowKey = code || name.toUpperCase();
+    const existingRowIdx = finalByDate[isoDate].rows.findIndex(
+      r => (r.code || r.name.toUpperCase()) === rowKey
+    );
+
+    const rowObj = {
+      code,
+      name,
+      lastYears,
+      lastMonths,
+      targets
+    };
+
+    if (existingRowIdx >= 0) {
+      finalByDate[isoDate].rows[existingRowIdx] = rowObj;
+    } else {
+      finalByDate[isoDate].rows.push(rowObj);
     }
+  }
 
-    function exportMasterExcel() {
-      if (typeof XLSX === 'undefined') {
-        alert('Library Excel belum termuat. Pastikan koneksi internet aktif.');
-        return;
-      }
-      const dates = Object.keys(masterStore).sort();
-      if (dates.length === 0) {
-        alert('Belum ada data master untuk di-export.');
-        return;
-      }
-      const flatRows = [];
-      const pushFlat = (dt, entry, r, forceCode, forceName) => {
-        flatRows.push({
-          tanggal: dt,
-          tgl_thn_lalu: entry.lastYearDate,
-          tgl_bln_lalu: entry.lastMonthDate,
-          kode_am: forceCode || r.code,
-          nama_am: forceName || r.name,
-          thn_lalu_dry: Number(r.lastYears.dry) || 0,
-          thn_lalu_khusus: Number(r.lastYears.khusus) || 0,
-          thn_lalu_klik_dry: Number(r.lastYears.klikDry) || 0,
-          thn_lalu_klik_food: Number(r.lastYears.klikFood) || 0,
-          thn_lalu_apka: Number(r.lastYears.apka) || 0,
-          bln_lalu_dry: Number(r.lastMonths.dry) || 0,
-          bln_lalu_khusus: Number(r.lastMonths.khusus) || 0,
-          bln_lalu_klik_dry: Number(r.lastMonths.klikDry) || 0,
-          bln_lalu_klik_food: Number(r.lastMonths.klikFood) || 0,
-          bln_lalu_apka: Number(r.lastMonths.apka) || 0,
-          target_dry: Number(r.targets.dry) || 0,
-          target_khusus: Number(r.targets.khusus) || 0,
-          target_klik_dry: Number(r.targets.klikDry) || 0,
-          target_klik_food: Number(r.targets.klikFood) || 0,
-          target_apka: Number(r.targets.apka) || 0
-        });
-      };
-
-      for (const dt of dates) {
-        const entry = getMasterEntryForDate(dt);
-        for (const r of entry.rows) {
-          pushFlat(dt, entry, r);
-        }
-        if (entry.customTotal) {
-          pushFlat(dt, entry, entry.customTotal, 'TOTAL', 'TOTAL');
-        }
-      }
-      const ws = XLSX.utils.json_to_sheet(flatRows);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Master');
-      XLSX.writeFile(wb, 'master.xlsx');
-    }
-
-    function parseRowsMatrixToStore(matrixRows, fallbackDate) {
-      if (!matrixRows || matrixRows.length === 0) return {};
-      const firstCells = matrixRows[0].map(h => String(h || '').toLowerCase().replace(/[\r\n]+/g, '_').replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '').replace(/_+/g, '_').replace(/^_|_$/g, ''));
-      const hasHeader = firstCells.some(h => [
-        'tanggal', 'date', 'tgl', 'tgl_thn_lalu', 'tgl_bln_lalu', 'kode_am', 'kode', 'am',
-        'nama_am', 'nama', 'thn_lalu', 'thn_lalu_dry', 'bln_lalu', 'bln_lalu_dry',
-        'target', 'target_dry', 'target_khusus', 'target_prodsus'
-      ].includes(h));
-
-      const findCol = (names, fallbackIdx) => {
-        if (!hasHeader) return fallbackIdx;
-        return firstCells.findIndex(h => names.includes(h));
-      };
-
-      const idxDate = findCol(['tanggal', 'date', 'tgl'], 0);
-      const idxRefLY = findCol(['tgl_thn_lalu', 'tanggal_thn_lalu', 'tgl_tahun_lalu', 'tanggal_tahun_lalu', 'ref_thn_lalu'], -1);
-      const idxRefLM = findCol(['tgl_bln_lalu', 'tanggal_bln_lalu', 'tgl_bulan_lalu', 'tanggal_bulan_lalu', 'ref_bln_lalu'], -1);
-      const idxCode = findCol(['kode_am', 'kode', 'am'], 1);
-      const idxName = findCol(['nama_am', 'nama'], 2);
-
-      const idxLYDry = findCol(['thn_lalu_dry', 'thnlaludry', 'thn_lalu', 'thnlalu', 'histori_thn_lalu', 'last_year'], 3);
-      const idxLYKhusus = findCol(['thn_lalu_khusus', 'thnlalukhusus', 'thn_lalu_prodsus', 'thnlaluprodsus'], -1);
-      const idxLYKlikDry = findCol(['thn_lalu_klik_dry', 'thnlaluklikdry'], -1);
-      const idxLYKlikFood = findCol(['thn_lalu_klik_food', 'thnlaluklikfood'], -1);
-      const idxLYApka = findCol(['thn_lalu_apka', 'thnlaluapka'], -1);
-
-      const idxLMDry = findCol(['bln_lalu_dry', 'blnlaludry', 'bln_lalu', 'blnlalu', 'bulan_lalu', 'last_month'], -1);
-      const idxLMKhusus = findCol(['bln_lalu_khusus', 'blnlalukhusus', 'bln_lalu_prodsus', 'blnlaluprodsus'], -1);
-      const idxLMKlikDry = findCol(['bln_lalu_klik_dry', 'blnlaluklikdry'], -1);
-      const idxLMKlikFood = findCol(['bln_lalu_klik_food', 'blnlaluklikfood'], -1);
-      const idxLMApka = findCol(['bln_lalu_apka', 'blnlaluapka'], -1);
-
-      const idxTgtDry = findCol(['target_dry', 'tgtdry', 'target', 'tgt'], idxLMDry >= 0 ? 5 : 4);
-      const idxTgtKhusus = findCol(['target_khusus', 'tgtkhusus', 'target_prodsus', 'tgtprodsus', 'prodsus', 'khusus'], -1);
-      const idxTgtKlikDry = findCol(['target_klik_dry', 'tgtklikdry', 'klik_dry'], -1);
-      const idxTgtKlikFood = findCol(['target_klik_food', 'tgtklikfood', 'klik_food'], -1);
-      const idxTgtApka = findCol(['target_apka', 'tgtapka', 'apka'], -1);
-
-      const startIdx = hasHeader ? 1 : 0;
-      const finalByDate = {};
-
-      for (let i = startIdx; i < matrixRows.length; i++) {
-        const cols = matrixRows[i];
-        if (!cols || cols.length === 0) continue;
-
-        const rawDate = idxDate >= 0 ? cols[idxDate] : '';
-        const isoDate = normalizeIsoDate(rawDate) || normalizeIsoDate(fallbackDate) || getTodayIso();
-        const refLY = normalizeIsoDate(idxRefLY >= 0 ? cols[idxRefLY] : '') || defaultLastYearIso(isoDate);
-        const refLM = normalizeIsoDate(idxRefLM >= 0 ? cols[idxRefLM] : '') || defaultLastMonthIso(isoDate);
-
-        const code = String(idxCode >= 0 ? (cols[idxCode] || '') : '').trim().toUpperCase();
-        const name = String(idxName >= 0 ? (cols[idxName] || '') : '').trim() || code;
-
-        const lastYears = {
-          dry: parseLooseNumber(idxLYDry >= 0 ? cols[idxLYDry] : 0),
-          khusus: parseLooseNumber(idxLYKhusus >= 0 ? cols[idxLYKhusus] : 0),
-          klikDry: parseLooseNumber(idxLYKlikDry >= 0 ? cols[idxLYKlikDry] : 0),
-          klikFood: parseLooseNumber(idxLYKlikFood >= 0 ? cols[idxLYKlikFood] : 0),
-          apka: parseLooseNumber(idxLYApka >= 0 ? cols[idxLYApka] : 0)
-        };
-
-        const lastMonths = {
-          dry: parseLooseNumber(idxLMDry >= 0 ? cols[idxLMDry] : 0),
-          khusus: parseLooseNumber(idxLMKhusus >= 0 ? cols[idxLMKhusus] : 0),
-          klikDry: parseLooseNumber(idxLMKlikDry >= 0 ? cols[idxLMKlikDry] : 0),
-          klikFood: parseLooseNumber(idxLMKlikFood >= 0 ? cols[idxLMKlikFood] : 0),
-          apka: parseLooseNumber(idxLMApka >= 0 ? cols[idxLMApka] : 0)
-        };
-
-        const targets = {
-          dry: parseLooseNumber(idxTgtDry >= 0 ? cols[idxTgtDry] : 0),
-          khusus: parseLooseNumber(idxTgtKhusus >= 0 ? cols[idxTgtKhusus] : 0),
-          klikDry: parseLooseNumber(idxTgtKlikDry >= 0 ? cols[idxTgtKlikDry] : 0),
-          klikFood: parseLooseNumber(idxTgtKlikFood >= 0 ? cols[idxTgtKlikFood] : 0),
-          apka: parseLooseNumber(idxTgtApka >= 0 ? cols[idxTgtApka] : 0)
-        };
-
-        if (!code && !name) continue;
-
-        if (!finalByDate[isoDate]) {
-          finalByDate[isoDate] = {
-            lastYearDate: refLY,
-            lastMonthDate: refLM,
-            rows: [],
-            customTotal: null
-          };
-        } else {
-          if (idxRefLY >= 0 && normalizeIsoDate(cols[idxRefLY])) {
-            finalByDate[isoDate].lastYearDate = normalizeIsoDate(cols[idxRefLY]);
-          }
-          if (idxRefLM >= 0 && normalizeIsoDate(cols[idxRefLM])) {
-            finalByDate[isoDate].lastMonthDate = normalizeIsoDate(cols[idxRefLM]);
-          }
-        }
-
-        const rowObj = { code: code || name, name: name || code, lastYears, lastMonths, targets };
-        if (code === 'TOTAL' || name.toUpperCase() === 'TOTAL') {
-          finalByDate[isoDate].customTotal = rowObj;
-        } else {
-          finalByDate[isoDate].rows.push(rowObj);
-        }
-      }
-      return finalByDate;
+  return finalByDate;
     }
 
     function parseExcelArrayBuffer(arrayBuffer, fallbackDate) {
