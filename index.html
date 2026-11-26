@@ -421,7 +421,7 @@
               </div>
             </div>
 
-            <div id="masterSyncNotice" class="status-bar">
+            <div id="masterSyncNotice" class="status-bar" style="display:none;">
               Memeriksa Data...
             </div>
           </div>
@@ -582,6 +582,7 @@
 
     const CAT_KEY_MAP = {
       'dry': 'dry',
+      'produk khusus': 'khusus',
       'khusus': 'khusus',
       'prodsus': 'khusus',
       'klik dry': 'klikDry',
@@ -723,18 +724,15 @@
       const s = String(rawDate).trim();
       if (!s) return '';
 
-      // Serial angka dalam bentuk string (mis. 46352)
       if (/^\d{5}$/.test(s)) {
         return excelSerialToIso(parseInt(s, 10));
       }
 
-      // Format ISO YYYY-MM-DD atau YYYY-M-D
       if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(s)) {
         const [y, m, d] = s.split('-');
         return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
       }
 
-      // Format angka dengan slash atau dash, mendukung tahun 2 atau 4 digit (mis. 26/11/26 atau 26-11-2026)
       const slashOrDash = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
       if (slashOrDash) {
         const p1 = parseInt(slashOrDash[1], 10);
@@ -756,7 +754,6 @@
         return `${yearStr}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
       }
 
-      // Format teks nama bulan (Indonesia & Inggris), mendukung tahun 2 atau 4 digit (mis. 26-Nov-26 atau 1-Nov-26)
       const monthMap = {
         jan: '01', feb: '02', mar: '03', apr: '04', mei: '05', may: '05',
         jun: '06', jul: '07', agu: '08', aug: '08', sep: '09',
@@ -882,6 +879,17 @@
           if (idxRefLM >= 0 && normalizeIsoDate(cols[idxRefLM])) {
             finalByDate[isoDate].lastMonthDate = normalizeIsoDate(cols[idxRefLM]);
           }
+        }
+
+        if (code === 'TOTAL' || name.toUpperCase() === 'TOTAL') {
+          finalByDate[isoDate].customTotal = {
+            code: 'TOTAL',
+            name: 'TOTAL',
+            lastYears,
+            lastMonths,
+            targets
+          };
+          continue;
         }
 
         const rowKey = code || name.toUpperCase();
@@ -1048,6 +1056,9 @@
       }
     }
 
+    // =========================================================
+    // PARSER TEKS BOT (.TXT) & AVERAGE SPD PER AM
+    // =========================================================
     function parseLooseNumber(val) {
       if (typeof val === 'number') return isFinite(val) ? val : 0;
       if (val === null || val === undefined) return 0;
@@ -1146,7 +1157,9 @@
       }
 
       const rowsList = Array.isArray(rawEntry) ? rawEntry : (rawEntry.rows || []);
-      const rows = rowsList.map(normalizeMasterRow).filter(r => r.code || r.name);
+      const rows = rowsList
+        .map(normalizeMasterRow)
+        .filter(r => (r.code || r.name) && r.code !== 'TOTAL' && r.name.toUpperCase() !== 'TOTAL');
       const customTotal = (!Array.isArray(rawEntry) && rawEntry.customTotal)
         ? normalizeMasterRow(rawEntry.customTotal)
         : null;
@@ -1257,9 +1270,6 @@
       XLSX.writeFile(wb, 'master_export.xlsx');
     }
 
-    // =========================================================
-    // PARSER TEKS BOT (.TXT) & AVERAGE SPD PER AM
-    // =========================================================
     function parseBotSales(text) {
       const lines = text.split(/\r?\n/);
       let currentBranch = 'DEFAULT';
@@ -1303,7 +1313,7 @@
 
     function normalizeCategoryLabel(cat) {
       const c = String(cat || '').toLowerCase().trim();
-      if (c === 'prodsus') return 'khusus';
+      if (c === 'prodsus' || c === 'khusus' || c === 'produk khusus') return 'produk khusus';
       return c;
     }
 
@@ -1400,6 +1410,7 @@
       const notice = document.getElementById('masterSyncNotice');
 
       const combined = masterEntry.rows
+        .filter(m => m.code !== 'TOTAL' && String(m.name || '').toUpperCase() !== 'TOTAL')
         .map(m => {
           const metrics = getEffectiveMetricsForItem(m, effectiveCatKeys);
           return {
@@ -1411,7 +1422,7 @@
             spd: spdMap[m.code] || 0
           };
         })
-        .filter(r => r.target > 0 || r.lastYear > 0 || r.lastMonth > 0);
+        .filter(r => r.target > 0 || r.lastYear > 0 || r.lastMonth > 0 || r.spd > 0);
 
       const activeCatNames = selectedCats.length
         ? selectedCats.join(' + ')
