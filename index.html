@@ -577,7 +577,7 @@
   </footer>
 
   <script>
-    const STORAGE_KEY = 'jbg_realtime_master_v22';
+    const STORAGE_KEY = 'jbg_realtime_master_v23';
     let masterStore = {};
 
     const CAT_KEY_MAP = {
@@ -748,7 +748,6 @@
         jun: '06', jul: '07', agu: '08', aug: '08', sep: '09',
         okt: '10', oct: '10', nov: '11', des: '12', dec: '12'
       };
-      // Mendukung tahun 2 digit (mis. 1-Nov-26) maupun 4 digit (mis. 1-Nov-2026)
       const textMonth = s.match(/^(\d{1,2})[\s\-]+([A-Za-z]{3,9})[\s\-]+(\d{2}|\d{4})$/);
       if (textMonth) {
         const dd = textMonth[1].padStart(2, '0');
@@ -992,7 +991,6 @@
 
       const firstCells = matrixRows[0].map(cleanHeader);
 
-      // Deteksi dinamis berdasarkan pola kata kunci pada nama header Excel
       const findColByRule = (ruleFn, fallbackIdx = -1) => {
         const idx = firstCells.findIndex(ruleFn);
         return idx >= 0 ? idx : fallbackIdx;
@@ -1102,7 +1100,6 @@
         }
       }
       return finalByDate;
-    }
     }
 
     function parseExcelArrayBuffer(arrayBuffer, fallbackDate) {
