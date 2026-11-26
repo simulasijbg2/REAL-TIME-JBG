@@ -982,42 +982,60 @@
 
     function parseRowsMatrixToStore(matrixRows, fallbackDate) {
       if (!matrixRows || matrixRows.length === 0) return {};
-      const cleanHeader = h => String(h || '').toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '').replace(/_+/g, '_').replace(/^_|_$/g, '');
-      const firstCells = matrixRows[0].map(cleanHeader);
-      const hasHeader = firstCells.some(h => [
-        'tanggal', 'date', 'tgl', 'tgl_thn_lalu', 'tgl_bln_lalu', 'kode_am', 'kode', 'am',
-        'nama_am', 'nama', 'thn_lalu', 'thn_lalu_dry', 'bln_lalu', 'bln_lalu_dry',
-        'target', 'target_dry', 'target_khusus', 'target_prodsus'
-      ].includes(h));
+      const cleanHeader = h => String(h || '')
+        .toLowerCase()
+        .replace(/[\r\n]+/g, '_')
+        .replace(/\s+/g, '_')
+        .replace(/[^a-z0-9_]/g, '')
+        .replace(/_+/g, '_')
+        .replace(/^_|_$/g, '');
 
-      const findCol = (names, fallbackIdx) => {
-        if (!hasHeader) return fallbackIdx;
-        return firstCells.findIndex(h => names.includes(h));
+      const firstCells = matrixRows[0].map(cleanHeader);
+
+      // Deteksi dinamis berdasarkan pola kata kunci pada nama header Excel
+      const findColByRule = (ruleFn, fallbackIdx = -1) => {
+        const idx = firstCells.findIndex(ruleFn);
+        return idx >= 0 ? idx : fallbackIdx;
       };
 
-      const idxDate = findCol(['tanggal', 'date', 'tgl'], 0);
-      const idxRefLY = findCol(['tgl_thn_lalu', 'tanggal_thn_lalu', 'tgl_tahun_lalu', 'tanggal_tahun_lalu', 'ref_thn_lalu'], -1);
-      const idxRefLM = findCol(['tgl_bln_lalu', 'tanggal_bln_lalu', 'tgl_bulan_lalu', 'tanggal_bulan_lalu', 'ref_bln_lalu'], -1);
-      const idxCode = findCol(['kode_am', 'kode', 'am'], 1);
-      const idxName = findCol(['nama_am', 'nama'], 2);
+      const isLY = h => /(thn|tahun|last_year|ly|histori_thn|hist_thn)/.test(h) && !/tgl|tanggal|date/.test(h);
+      const isLM = h => /(bln|bulan|last_month|lm|histori_bln|hist_bln)/.test(h) && !/tgl|tanggal|date/.test(h);
+      const isTgt = h => /(target|tgt)/.test(h) && !/tgl|tanggal|date/.test(h);
 
-      const idxLYDry = findCol(['thn_lalu_dry', 'thnlaludry', 'thn_lalu', 'thnlalu', 'histori_thn_lalu', 'last_year'], 3);
-      const idxLYKhusus = findCol(['thn_lalu_khusus', 'thnlalukhusus', 'thn_lalu_prodsus', 'thnlaluprodsus', 'thn_lalu_produk_khusus'], -1);
-      const idxLYKlikDry = findCol(['thn_lalu_klik_dry', 'thnlaluklikdry'], -1);
-      const idxLYKlikFood = findCol(['thn_lalu_klik_food', 'thnlaluklikfood'], -1);
-      const idxLYApka = findCol(['thn_lalu_apka', 'thnlaluapka'], -1);
+      const isDry = h => /dry/.test(h) && !/klik/.test(h);
+      const isKhusus = h => /(khusus|prodsus)/.test(h);
+      const isKlikDry = h => /klik_?dry/.test(h);
+      const isKlikFood = h => /klik_?food/.test(h);
+      const isApka = h => /apka/.test(h);
 
-      const idxLMDry = findCol(['bln_lalu_dry', 'blnlaludry', 'bln_lalu', 'blnlalu', 'bulan_lalu', 'last_month'], -1);
-      const idxLMKhusus = findCol(['bln_lalu_khusus', 'blnlalukhusus', 'bln_lalu_prodsus', 'blnlaluprodsus', 'bln_lalu_produk_khusus'], -1);
-      const idxLMKlikDry = findCol(['bln_lalu_klik_dry', 'blnlaluklikdry'], -1);
-      const idxLMKlikFood = findCol(['bln_lalu_klik_food', 'blnlaluklikfood'], -1);
-      const idxLMApka = findCol(['bln_lalu_apka', 'blnlaluapka'], -1);
+      const hasHeader = firstCells.some(h =>
+        ['tanggal', 'date', 'tgl', 'kode_am', 'kode', 'am', 'nama_am', 'nama'].includes(h) ||
+        isLY(h) || isLM(h) || isTgt(h)
+      );
 
-      const idxTgtDry = findCol(['target_dry', 'tgtdry', 'target', 'tgt'], idxLMDry >= 0 ? 5 : 4);
-      const idxTgtKhusus = findCol(['target_khusus', 'tgtkhusus', 'target_prodsus', 'tgtprodsus', 'target_produk_khusus', 'prodsus', 'khusus'], -1);
-      const idxTgtKlikDry = findCol(['target_klik_dry', 'tgtklikdry', 'klik_dry'], -1);
-      const idxTgtKlikFood = findCol(['target_klik_food', 'tgtklikfood', 'klik_food'], -1);
-      const idxTgtApka = findCol(['target_apka', 'tgtapka', 'apka'], -1);
+      const idxDate = hasHeader ? findColByRule(h => ['tanggal', 'date', 'tgl'].includes(h), 0) : 0;
+      const idxRefLY = hasHeader ? findColByRule(h => /(tgl|tanggal|date).*(thn|tahun|ly)/.test(h), -1) : -1;
+      const idxRefLM = hasHeader ? findColByRule(h => /(tgl|tanggal|date).*(bln|bulan|lm)/.test(h), -1) : -1;
+      const idxCode = hasHeader ? findColByRule(h => ['kode_am', 'kode', 'am'].includes(h), 1) : 1;
+      const idxName = hasHeader ? findColByRule(h => ['nama_am', 'nama'].includes(h), 2) : 2;
+
+      const idxLYDry = hasHeader ? findColByRule(h => isLY(h) && (isDry(h) || /^(thn_?lalu|tahun_?lalu|last_?year)$/.test(h)), -1) : 3;
+      const idxLYKhusus = hasHeader ? findColByRule(h => isLY(h) && isKhusus(h), -1) : -1;
+      const idxLYKlikDry = hasHeader ? findColByRule(h => isLY(h) && isKlikDry(h), -1) : -1;
+      const idxLYKlikFood = hasHeader ? findColByRule(h => isLY(h) && isKlikFood(h), -1) : -1;
+      const idxLYApka = hasHeader ? findColByRule(h => isLY(h) && isApka(h), -1) : -1;
+
+      const idxLMDry = hasHeader ? findColByRule(h => isLM(h) && (isDry(h) || /^(bln_?lalu|bulan_?lalu|last_?month)$/.test(h)), -1) : -1;
+      const idxLMKhusus = hasHeader ? findColByRule(h => isLM(h) && isKhusus(h), -1) : -1;
+      const idxLMKlikDry = hasHeader ? findColByRule(h => isLM(h) && isKlikDry(h), -1) : -1;
+      const idxLMKlikFood = hasHeader ? findColByRule(h => isLM(h) && isKlikFood(h), -1) : -1;
+      const idxLMApka = hasHeader ? findColByRule(h => isLM(h) && isApka(h), -1) : -1;
+
+      const idxTgtDry = hasHeader ? findColByRule(h => isTgt(h) && (isDry(h) || /^(target|tgt)$/.test(h)), -1) : 4;
+      const idxTgtKhusus = hasHeader ? findColByRule(h => isTgt(h) && isKhusus(h), -1) : -1;
+      const idxTgtKlikDry = hasHeader ? findColByRule(h => isTgt(h) && isKlikDry(h), -1) : -1;
+      const idxTgtKlikFood = hasHeader ? findColByRule(h => isTgt(h) && isKlikFood(h), -1) : -1;
+      const idxTgtApka = hasHeader ? findColByRule(h => isTgt(h) && isApka(h), -1) : -1;
 
       const startIdx = hasHeader ? 1 : 0;
       const finalByDate = {};
@@ -1084,6 +1102,7 @@
         }
       }
       return finalByDate;
+    }
     }
 
     function parseExcelArrayBuffer(arrayBuffer, fallbackDate) {
