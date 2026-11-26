@@ -706,205 +706,205 @@
       return `${y}-${m}-${d}`;
     }
 
-   function normalizeIsoDate(rawDate) {
-  if (rawDate === null || rawDate === undefined || rawDate === '') return '';
+    function normalizeIsoDate(rawDate) {
+      if (rawDate === null || rawDate === undefined || rawDate === '') return '';
 
-  if (typeof rawDate === 'number') {
-    return excelSerialToIso(rawDate);
-  }
+      if (typeof rawDate === 'number') {
+        return excelSerialToIso(rawDate);
+      }
 
-  if (rawDate instanceof Date && !isNaN(rawDate.getTime())) {
-    const y = rawDate.getFullYear();
-    const m = String(rawDate.getMonth() + 1).padStart(2, '0');
-    const d = String(rawDate.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-  }
+      if (rawDate instanceof Date && !isNaN(rawDate.getTime())) {
+        const y = rawDate.getFullYear();
+        const m = String(rawDate.getMonth() + 1).padStart(2, '0');
+        const d = String(rawDate.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+      }
 
-  const s = String(rawDate).trim();
-  if (!s) return '';
+      const s = String(rawDate).trim();
+      if (!s) return '';
 
-  // Serial angka dalam bentuk string (mis. 46352)
-  if (/^\d{5}$/.test(s)) {
-    return excelSerialToIso(parseInt(s, 10));
-  }
+      // Serial angka dalam bentuk string (mis. 46352)
+      if (/^\d{5}$/.test(s)) {
+        return excelSerialToIso(parseInt(s, 10));
+      }
 
-  // Format ISO YYYY-MM-DD atau YYYY-M-D
-  if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(s)) {
-    const [y, m, d] = s.split('-');
-    return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
-  }
+      // Format ISO YYYY-MM-DD atau YYYY-M-D
+      if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(s)) {
+        const [y, m, d] = s.split('-');
+        return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+      }
 
-  // Format angka dengan slash atau dash, mendukung tahun 2 atau 4 digit (mis. 26/11/26 atau 26-11-2026)
-  const slashOrDash = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
-  if (slashOrDash) {
-    const p1 = parseInt(slashOrDash[1], 10);
-    const p2 = parseInt(slashOrDash[2], 10);
-    let yearStr = slashOrDash[3];
+      // Format angka dengan slash atau dash, mendukung tahun 2 atau 4 digit (mis. 26/11/26 atau 26-11-2026)
+      const slashOrDash = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+      if (slashOrDash) {
+        const p1 = parseInt(slashOrDash[1], 10);
+        const p2 = parseInt(slashOrDash[2], 10);
+        let yearStr = slashOrDash[3];
 
-    if (yearStr.length === 2) {
-      const yy = parseInt(yearStr, 10);
-      yearStr = (yy >= 70 ? '19' : '20') + yearStr.padStart(2, '0');
-    }
+        if (yearStr.length === 2) {
+          const yy = parseInt(yearStr, 10);
+          yearStr = (yy >= 70 ? '19' : '20') + yearStr.padStart(2, '0');
+        }
 
-    let dd = p1;
-    let mm = p2;
-    if (p1 <= 12 && p2 > 12) {
-      mm = p1;
-      dd = p2;
-    }
+        let dd = p1;
+        let mm = p2;
+        if (p1 <= 12 && p2 > 12) {
+          mm = p1;
+          dd = p2;
+        }
 
-    return `${yearStr}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
-  }
+        return `${yearStr}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
+      }
 
-  // Format teks nama bulan (Indonesia & Inggris), mendukung tahun 2 atau 4 digit (mis. 26-Nov-26 atau 1-Nov-26)
-  const monthMap = {
-    jan: '01', feb: '02', mar: '03', apr: '04', mei: '05', may: '05',
-    jun: '06', jul: '07', agu: '08', aug: '08', sep: '09',
-    okt: '10', oct: '10', nov: '11', des: '12', dec: '12'
-  };
-
-  const textMonth = s.match(/^(\d{1,2})[\s\-]+([A-Za-z]{3,9})[\s\-]+(\d{2,4})$/);
-  if (textMonth) {
-    const dd = textMonth[1].padStart(2, '0');
-    const mm = monthMap[textMonth[2].slice(0, 3).toLowerCase()];
-    let yearStr = textMonth[3];
-
-    if (yearStr.length === 2) {
-      const yy = parseInt(yearStr, 10);
-      yearStr = (yy >= 70 ? '19' : '20') + yearStr.padStart(2, '0');
-    }
-
-    if (mm) {
-      return `${yearStr}-${mm}-${dd}`;
-    }
-  }
-
-  return '';
-}
-
-function parseRowsMatrixToStore(matrixRows, fallbackDate) {
-  if (!matrixRows || matrixRows.length === 0) return {};
-
-  const firstCells = matrixRows[0].map(h =>
-    String(h || '')
-      .toLowerCase()
-      .replace(/[\r\n]+/g, '_')
-      .replace(/\s+/g, '_')
-      .replace(/[^a-z0-9_]/g, '')
-  );
-
-  const hasHeader = firstCells.some(h => [
-    'tanggal', 'date', 'tgl', 'tgl_thn_lalu', 'tgl_bln_lalu', 'kode_am', 'kode', 'am',
-    'nama_am', 'nama', 'thn_lalu', 'thn_lalu_dry', 'bln_lalu', 'bln_lalu_dry',
-    'target', 'target_dry', 'target_khusus', 'target_prodsus'
-  ].includes(h));
-
-  const findCol = (names, fallbackIdx) => {
-    if (!hasHeader) return fallbackIdx;
-    return firstCells.findIndex(h => names.includes(h));
-  };
-
-  const idxDate = findCol(['tanggal', 'date', 'tgl'], 0);
-  const idxRefLY = findCol(['tgl_thn_lalu', 'tanggal_thn_lalu', 'tgl_tahun_lalu', 'tanggal_tahun_lalu', 'ref_thn_lalu'], -1);
-  const idxRefLM = findCol(['tgl_bln_lalu', 'tanggal_bln_lalu', 'tgl_bulan_lalu', 'tanggal_bulan_lalu', 'ref_bln_lalu'], -1);
-  const idxCode = findCol(['kode_am', 'kode', 'am'], 1);
-  const idxName = findCol(['nama_am', 'nama'], 2);
-
-  const idxLYDry = findCol(['thn_lalu_dry', 'thnlaludry', 'thn_lalu', 'thnlalu', 'histori_thn_lalu', 'last_year'], 3);
-  const idxLYKhusus = findCol(['thn_lalu_khusus', 'thnlalukhusus', 'thn_lalu_prodsus', 'thnlaluprodsus'], -1);
-  const idxLYKlikDry = findCol(['thn_lalu_klik_dry', 'thnlaluklikdry'], -1);
-  const idxLYKlikFood = findCol(['thn_lalu_klik_food', 'thnlaluklikfood'], -1);
-  const idxLYApka = findCol(['thn_lalu_apka', 'thnlaluapka'], -1);
-
-  const idxLMDry = findCol(['bln_lalu_dry', 'blnlaludry', 'bln_lalu', 'blnlalu', 'bulan_lalu', 'last_month'], -1);
-  const idxLMKhusus = findCol(['bln_lalu_khusus', 'blnlalukhusus', 'bln_lalu_prodsus', 'blnlaluprodsus'], -1);
-  const idxLMKlikDry = findCol(['bln_lalu_klik_dry', 'blnlaluklikdry'], -1);
-  const idxLMKlikFood = findCol(['bln_lalu_klik_food', 'blnlaluklikfood'], -1);
-  const idxLMApka = findCol(['bln_lalu_apka', 'blnlaluapka'], -1);
-
-  const idxTgtDry = findCol(['target_dry', 'tgtdry', 'target', 'tgt'], idxLMDry >= 0 ? 5 : 4);
-  const idxTgtKhusus = findCol(['target_khusus', 'tgtkhusus', 'target_prodsus', 'tgtprodsus', 'prodsus', 'khusus'], -1);
-  const idxTgtKlikDry = findCol(['target_klik_dry', 'tgtklikdry', 'klik_dry'], -1);
-  const idxTgtKlikFood = findCol(['target_klik_food', 'tgtklikfood', 'klik_food'], -1);
-  const idxTgtApka = findCol(['target_apka', 'tgtapka', 'apka'], -1);
-
-  const startIdx = hasHeader ? 1 : 0;
-  const finalByDate = {};
-
-  for (let i = startIdx; i < matrixRows.length; i++) {
-    const cols = matrixRows[i];
-    if (!cols || cols.length === 0) continue;
-
-    const rawDate = idxDate >= 0 ? cols[idxDate] : '';
-    const isoDate = normalizeIsoDate(rawDate) || normalizeIsoDate(fallbackDate) || getTodayIso();
-    const refLY = normalizeIsoDate(idxRefLY >= 0 ? cols[idxRefLY] : '') || defaultLastYearIso(isoDate);
-    const refLM = normalizeIsoDate(idxRefLM >= 0 ? cols[idxRefLM] : '') || defaultLastMonthIso(isoDate);
-
-    const code = String(idxCode >= 0 ? (cols[idxCode] || '') : '').trim().toUpperCase();
-    const name = String(idxName >= 0 ? (cols[idxName] || '') : '').trim() || code;
-    if (!code && !name) continue;
-
-    const lastYears = {
-      dry: parseLooseNumber(idxLYDry >= 0 ? cols[idxLYDry] : 0),
-      khusus: parseLooseNumber(idxLYKhusus >= 0 ? cols[idxLYKhusus] : 0),
-      klikDry: parseLooseNumber(idxLYKlikDry >= 0 ? cols[idxLYKlikDry] : 0),
-      klikFood: parseLooseNumber(idxLYKlikFood >= 0 ? cols[idxLYKlikFood] : 0),
-      apka: parseLooseNumber(idxLYApka >= 0 ? cols[idxLYApka] : 0)
-    };
-
-    const lastMonths = {
-      dry: parseLooseNumber(idxLMDry >= 0 ? cols[idxLMDry] : 0),
-      khusus: parseLooseNumber(idxLMKhusus >= 0 ? cols[idxLMKhusus] : 0),
-      klikDry: parseLooseNumber(idxLMKlikDry >= 0 ? cols[idxLMKlikDry] : 0),
-      klikFood: parseLooseNumber(idxLMKlikFood >= 0 ? cols[idxLMKlikFood] : 0),
-      apka: parseLooseNumber(idxLMApka >= 0 ? cols[idxLMApka] : 0)
-    };
-
-    const targets = {
-      dry: parseLooseNumber(idxTgtDry >= 0 ? cols[idxTgtDry] : 0),
-      khusus: parseLooseNumber(idxTgtKhusus >= 0 ? cols[idxTgtKhusus] : 0),
-      klikDry: parseLooseNumber(idxTgtKlikDry >= 0 ? cols[idxTgtKlikDry] : 0),
-      klikFood: parseLooseNumber(idxTgtKlikFood >= 0 ? cols[idxTgtKlikFood] : 0),
-      apka: parseLooseNumber(idxTgtApka >= 0 ? cols[idxTgtApka] : 0)
-    };
-
-    if (!finalByDate[isoDate]) {
-      finalByDate[isoDate] = {
-        lastYearDate: refLY,
-        lastMonthDate: refLM,
-        rows: [],
-        customTotal: null
+      // Format teks nama bulan (Indonesia & Inggris), mendukung tahun 2 atau 4 digit (mis. 26-Nov-26 atau 1-Nov-26)
+      const monthMap = {
+        jan: '01', feb: '02', mar: '03', apr: '04', mei: '05', may: '05',
+        jun: '06', jul: '07', agu: '08', aug: '08', sep: '09',
+        okt: '10', oct: '10', nov: '11', des: '12', dec: '12'
       };
-    } else {
-      if (idxRefLY >= 0 && normalizeIsoDate(cols[idxRefLY])) {
-        finalByDate[isoDate].lastYearDate = normalizeIsoDate(cols[idxRefLY]);
+
+      const textMonth = s.match(/^(\d{1,2})[\s\-]+([A-Za-z]{3,9})[\s\-]+(\d{2,4})$/);
+      if (textMonth) {
+        const dd = textMonth[1].padStart(2, '0');
+        const mm = monthMap[textMonth[2].slice(0, 3).toLowerCase()];
+        let yearStr = textMonth[3];
+
+        if (yearStr.length === 2) {
+          const yy = parseInt(yearStr, 10);
+          yearStr = (yy >= 70 ? '19' : '20') + yearStr.padStart(2, '0');
+        }
+
+        if (mm) {
+          return `${yearStr}-${mm}-${dd}`;
+        }
       }
-      if (idxRefLM >= 0 && normalizeIsoDate(cols[idxRefLM])) {
-        finalByDate[isoDate].lastMonthDate = normalizeIsoDate(cols[idxRefLM]);
-      }
+
+      return '';
     }
 
-    const rowKey = code || name.toUpperCase();
-    const existingRowIdx = finalByDate[isoDate].rows.findIndex(
-      r => (r.code || r.name.toUpperCase()) === rowKey
-    );
+    function parseRowsMatrixToStore(matrixRows, fallbackDate) {
+      if (!matrixRows || matrixRows.length === 0) return {};
 
-    const rowObj = {
-      code,
-      name,
-      lastYears,
-      lastMonths,
-      targets
-    };
+      const firstCells = matrixRows[0].map(h =>
+        String(h || '')
+          .toLowerCase()
+          .replace(/[\r\n]+/g, '_')
+          .replace(/\s+/g, '_')
+          .replace(/[^a-z0-9_]/g, '')
+      );
 
-    if (existingRowIdx >= 0) {
-      finalByDate[isoDate].rows[existingRowIdx] = rowObj;
-    } else {
-      finalByDate[isoDate].rows.push(rowObj);
-    }
-  }
+      const hasHeader = firstCells.some(h => [
+        'tanggal', 'date', 'tgl', 'tgl_thn_lalu', 'tgl_bln_lalu', 'kode_am', 'kode', 'am',
+        'nama_am', 'nama', 'thn_lalu', 'thn_lalu_dry', 'bln_lalu', 'bln_lalu_dry',
+        'target', 'target_dry', 'target_khusus', 'target_prodsus'
+      ].includes(h));
 
-  return finalByDate;
+      const findCol = (names, fallbackIdx) => {
+        if (!hasHeader) return fallbackIdx;
+        return firstCells.findIndex(h => names.includes(h));
+      };
+
+      const idxDate = findCol(['tanggal', 'date', 'tgl'], 0);
+      const idxRefLY = findCol(['tgl_thn_lalu', 'tanggal_thn_lalu', 'tgl_tahun_lalu', 'tanggal_tahun_lalu', 'ref_thn_lalu'], -1);
+      const idxRefLM = findCol(['tgl_bln_lalu', 'tanggal_bln_lalu', 'tgl_bulan_lalu', 'tanggal_bulan_lalu', 'ref_bln_lalu'], -1);
+      const idxCode = findCol(['kode_am', 'kode', 'am'], 1);
+      const idxName = findCol(['nama_am', 'nama'], 2);
+
+      const idxLYDry = findCol(['thn_lalu_dry', 'thnlaludry', 'thn_lalu', 'thnlalu', 'histori_thn_lalu', 'last_year'], 3);
+      const idxLYKhusus = findCol(['thn_lalu_khusus', 'thnlalukhusus', 'thn_lalu_prodsus', 'thnlaluprodsus'], -1);
+      const idxLYKlikDry = findCol(['thn_lalu_klik_dry', 'thnlaluklikdry'], -1);
+      const idxLYKlikFood = findCol(['thn_lalu_klik_food', 'thnlaluklikfood'], -1);
+      const idxLYApka = findCol(['thn_lalu_apka', 'thnlaluapka'], -1);
+
+      const idxLMDry = findCol(['bln_lalu_dry', 'blnlaludry', 'bln_lalu', 'blnlalu', 'bulan_lalu', 'last_month'], -1);
+      const idxLMKhusus = findCol(['bln_lalu_khusus', 'blnlalukhusus', 'bln_lalu_prodsus', 'blnlaluprodsus'], -1);
+      const idxLMKlikDry = findCol(['bln_lalu_klik_dry', 'blnlaluklikdry'], -1);
+      const idxLMKlikFood = findCol(['bln_lalu_klik_food', 'blnlaluklikfood'], -1);
+      const idxLMApka = findCol(['bln_lalu_apka', 'blnlaluapka'], -1);
+
+      const idxTgtDry = findCol(['target_dry', 'tgtdry', 'target', 'tgt'], idxLMDry >= 0 ? 5 : 4);
+      const idxTgtKhusus = findCol(['target_khusus', 'tgtkhusus', 'target_prodsus', 'tgtprodsus', 'prodsus', 'khusus'], -1);
+      const idxTgtKlikDry = findCol(['target_klik_dry', 'tgtklikdry', 'klik_dry'], -1);
+      const idxTgtKlikFood = findCol(['target_klik_food', 'tgtklikfood', 'klik_food'], -1);
+      const idxTgtApka = findCol(['target_apka', 'tgtapka', 'apka'], -1);
+
+      const startIdx = hasHeader ? 1 : 0;
+      const finalByDate = {};
+
+      for (let i = startIdx; i < matrixRows.length; i++) {
+        const cols = matrixRows[i];
+        if (!cols || cols.length === 0) continue;
+
+        const rawDate = idxDate >= 0 ? cols[idxDate] : '';
+        const isoDate = normalizeIsoDate(rawDate) || normalizeIsoDate(fallbackDate) || getTodayIso();
+        const refLY = normalizeIsoDate(idxRefLY >= 0 ? cols[idxRefLY] : '') || defaultLastYearIso(isoDate);
+        const refLM = normalizeIsoDate(idxRefLM >= 0 ? cols[idxRefLM] : '') || defaultLastMonthIso(isoDate);
+
+        const code = String(idxCode >= 0 ? (cols[idxCode] || '') : '').trim().toUpperCase();
+        const name = String(idxName >= 0 ? (cols[idxName] || '') : '').trim() || code;
+        if (!code && !name) continue;
+
+        const lastYears = {
+          dry: parseLooseNumber(idxLYDry >= 0 ? cols[idxLYDry] : 0),
+          khusus: parseLooseNumber(idxLYKhusus >= 0 ? cols[idxLYKhusus] : 0),
+          klikDry: parseLooseNumber(idxLYKlikDry >= 0 ? cols[idxLYKlikDry] : 0),
+          klikFood: parseLooseNumber(idxLYKlikFood >= 0 ? cols[idxLYKlikFood] : 0),
+          apka: parseLooseNumber(idxLYApka >= 0 ? cols[idxLYApka] : 0)
+        };
+
+        const lastMonths = {
+          dry: parseLooseNumber(idxLMDry >= 0 ? cols[idxLMDry] : 0),
+          khusus: parseLooseNumber(idxLMKhusus >= 0 ? cols[idxLMKhusus] : 0),
+          klikDry: parseLooseNumber(idxLMKlikDry >= 0 ? cols[idxLMKlikDry] : 0),
+          klikFood: parseLooseNumber(idxLMKlikFood >= 0 ? cols[idxLMKlikFood] : 0),
+          apka: parseLooseNumber(idxLMApka >= 0 ? cols[idxLMApka] : 0)
+        };
+
+        const targets = {
+          dry: parseLooseNumber(idxTgtDry >= 0 ? cols[idxTgtDry] : 0),
+          khusus: parseLooseNumber(idxTgtKhusus >= 0 ? cols[idxTgtKhusus] : 0),
+          klikDry: parseLooseNumber(idxTgtKlikDry >= 0 ? cols[idxTgtKlikDry] : 0),
+          klikFood: parseLooseNumber(idxTgtKlikFood >= 0 ? cols[idxTgtKlikFood] : 0),
+          apka: parseLooseNumber(idxTgtApka >= 0 ? cols[idxTgtApka] : 0)
+        };
+
+        if (!finalByDate[isoDate]) {
+          finalByDate[isoDate] = {
+            lastYearDate: refLY,
+            lastMonthDate: refLM,
+            rows: [],
+            customTotal: null
+          };
+        } else {
+          if (idxRefLY >= 0 && normalizeIsoDate(cols[idxRefLY])) {
+            finalByDate[isoDate].lastYearDate = normalizeIsoDate(cols[idxRefLY]);
+          }
+          if (idxRefLM >= 0 && normalizeIsoDate(cols[idxRefLM])) {
+            finalByDate[isoDate].lastMonthDate = normalizeIsoDate(cols[idxRefLM]);
+          }
+        }
+
+        const rowKey = code || name.toUpperCase();
+        const existingRowIdx = finalByDate[isoDate].rows.findIndex(
+          r => (r.code || r.name.toUpperCase()) === rowKey
+        );
+
+        const rowObj = {
+          code,
+          name,
+          lastYears,
+          lastMonths,
+          targets
+        };
+
+        if (existingRowIdx >= 0) {
+          finalByDate[isoDate].rows[existingRowIdx] = rowObj;
+        } else {
+          finalByDate[isoDate].rows.push(rowObj);
+        }
+      }
+
+      return finalByDate;
     }
 
     function parseExcelArrayBuffer(arrayBuffer, fallbackDate) {
@@ -1046,6 +1046,215 @@ function parseRowsMatrixToStore(matrixRows, fallbackDate) {
         statusEl.className = 'status-bar warn';
         statusEl.textContent = 'File "master.xlsx" belum ditemukan di server GitHub. Pastikan file master.xlsx sudah di-upload ke repository.';
       }
+    }
+
+    function parseLooseNumber(val) {
+      if (typeof val === 'number') return isFinite(val) ? val : 0;
+      if (val === null || val === undefined) return 0;
+      let s = String(val).trim();
+      if (!s || s === '-') return 0;
+
+      let isNeg = false;
+      if (/^\(.*\)$/.test(s)) {
+        isNeg = true;
+        s = s.slice(1, -1).trim();
+      }
+      if (s.startsWith('-')) {
+        isNeg = true;
+        s = s.slice(1).trim();
+      }
+
+      s = s.replace(/[^\d.,]/g, '');
+      if (!s) return 0;
+
+      const hasDot = s.includes('.');
+      const hasComma = s.includes(',');
+
+      if (hasDot && hasComma) {
+        if (s.lastIndexOf(',') > s.lastIndexOf('.')) {
+          s = s.replace(/\./g, '').replace(',', '.');
+        } else {
+          s = s.replace(/,/g, '');
+        }
+      } else if (hasComma) {
+        const parts = s.split(',');
+        if (parts.length > 2 || (parts[1] && parts[1].length === 3)) {
+          s = s.replace(/,/g, '');
+        } else {
+          s = s.replace(',', '.');
+        }
+      } else if (hasDot) {
+        const parts = s.split('.');
+        if (parts.length > 2 || (parts[1] && parts[1].length === 3)) {
+          s = s.replace(/\./g, '');
+        }
+      }
+
+      const num = parseFloat(s);
+      if (!isFinite(num)) return 0;
+      return isNeg ? -num : num;
+    }
+
+    function normalizeMasterRow(rawRow) {
+      const r = rawRow || {};
+      const code = String(r.code || r.kode_am || r.kode || r.am || '').trim().toUpperCase();
+      const name = String(r.name || r.nama_am || r.nama || code).trim() || code;
+
+      const lySrc = r.lastYears || r.lastYear || {};
+      const lmSrc = r.lastMonths || r.lastMonth || {};
+      const tgtSrc = r.targets || r.target || {};
+
+      const lastYears = {
+        dry: parseLooseNumber(lySrc.dry ?? r.thn_lalu_dry ?? r.thn_lalu ?? 0),
+        khusus: parseLooseNumber(lySrc.khusus ?? r.thn_lalu_khusus ?? r.thn_lalu_prodsus ?? 0),
+        klikDry: parseLooseNumber(lySrc.klikDry ?? r.thn_lalu_klik_dry ?? 0),
+        klikFood: parseLooseNumber(lySrc.klikFood ?? r.thn_lalu_klik_food ?? 0),
+        apka: parseLooseNumber(lySrc.apka ?? r.thn_lalu_apka ?? 0)
+      };
+
+      const lastMonths = {
+        dry: parseLooseNumber(lmSrc.dry ?? r.bln_lalu_dry ?? r.bln_lalu ?? 0),
+        khusus: parseLooseNumber(lmSrc.khusus ?? r.bln_lalu_khusus ?? r.bln_lalu_prodsus ?? 0),
+        klikDry: parseLooseNumber(lmSrc.klikDry ?? r.bln_lalu_klik_dry ?? 0),
+        klikFood: parseLooseNumber(lmSrc.klikFood ?? r.bln_lalu_klik_food ?? 0),
+        apka: parseLooseNumber(lmSrc.apka ?? r.bln_lalu_apka ?? 0)
+      };
+
+      const targets = {
+        dry: parseLooseNumber(tgtSrc.dry ?? r.target_dry ?? r.target ?? 0),
+        khusus: parseLooseNumber(tgtSrc.khusus ?? r.target_khusus ?? r.target_prodsus ?? 0),
+        klikDry: parseLooseNumber(tgtSrc.klikDry ?? r.target_klik_dry ?? 0),
+        klikFood: parseLooseNumber(tgtSrc.klikFood ?? r.target_klik_food ?? 0),
+        apka: parseLooseNumber(tgtSrc.apka ?? r.target_apka ?? 0)
+      };
+
+      return { code, name, lastYears, lastMonths, targets };
+    }
+
+    function getMasterEntryForDate(isoDate) {
+      const norm = normalizeIsoDate(isoDate) || getTodayIso();
+      const rawEntry = masterStore[norm];
+
+      if (!rawEntry) {
+        return {
+          found: false,
+          lastYearDate: defaultLastYearIso(norm),
+          lastMonthDate: defaultLastMonthIso(norm),
+          rows: [],
+          customTotal: null
+        };
+      }
+
+      const rowsList = Array.isArray(rawEntry) ? rawEntry : (rawEntry.rows || []);
+      const rows = rowsList.map(normalizeMasterRow).filter(r => r.code || r.name);
+      const customTotal = (!Array.isArray(rawEntry) && rawEntry.customTotal)
+        ? normalizeMasterRow(rawEntry.customTotal)
+        : null;
+
+      return {
+        found: true,
+        lastYearDate: (!Array.isArray(rawEntry) && normalizeIsoDate(rawEntry.lastYearDate)) || defaultLastYearIso(norm),
+        lastMonthDate: (!Array.isArray(rawEntry) && normalizeIsoDate(rawEntry.lastMonthDate)) || defaultLastMonthIso(norm),
+        rows,
+        customTotal
+      };
+    }
+
+    function getEffectiveCategoryKeys(selectedCats) {
+      const keys = [];
+      for (const cat of selectedCats || []) {
+        const k = CAT_KEY_MAP[String(cat || '').toLowerCase().trim()];
+        if (k && !keys.includes(k)) keys.push(k);
+      }
+      return keys;
+    }
+
+    function getEffectiveMetricsForItem(item, catKeys) {
+      const norm = normalizeMasterRow(item);
+      if (!catKeys || catKeys.length === 0) {
+        return { lastYear: 0, lastMonth: 0, target: 0 };
+      }
+      let lastYear = 0;
+      let lastMonth = 0;
+      let target = 0;
+      for (const k of catKeys) {
+        lastYear += parseLooseNumber(norm.lastYears[k] || 0);
+        lastMonth += parseLooseNumber(norm.lastMonths[k] || 0);
+        target += parseLooseNumber(norm.targets[k] || 0);
+      }
+      return { lastYear, lastMonth, target };
+    }
+
+    function extractIsoDateFromText(text) {
+      if (!text) return '';
+      const lines = String(text).split(/\r?\n/).slice(0, 15);
+      for (const line of lines) {
+        const m1 = line.match(/\b(\d{1,2}[\s\-]+[A-Za-z]{3,9}[\s\-]+\d{2,4})\b/);
+        if (m1) {
+          const iso = normalizeIsoDate(m1[1]);
+          if (iso) return iso;
+        }
+        const m2 = line.match(/\b(\d{4}-\d{1,2}-\d{1,2})\b/);
+        if (m2) {
+          const iso = normalizeIsoDate(m2[1]);
+          if (iso) return iso;
+        }
+        const m3 = line.match(/\b(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})\b/);
+        if (m3) {
+          const iso = normalizeIsoDate(m3[1]);
+          if (iso) return iso;
+        }
+      }
+      return '';
+    }
+
+    function downloadTemplateExcel() {
+      if (typeof XLSX === 'undefined') return alert('Library SheetJS belum termuat.');
+      const rows = [
+        [
+          'tanggal', 'tgl_thn_lalu', 'tgl_bln_lalu', 'kode_am', 'nama_am',
+          'thn_lalu_dry', 'thn_lalu_khusus', 'thn_lalu_klik_dry', 'thn_lalu_klik_food', 'thn_lalu_apka',
+          'bln_lalu_dry', 'bln_lalu_khusus', 'bln_lalu_klik_dry', 'bln_lalu_klik_food', 'bln_lalu_apka',
+          'target_dry', 'target_khusus', 'target_klik_dry', 'target_klik_food', 'target_apka'
+        ],
+        [
+          '26-Nov-26', '26-Nov-25', '26-Oct-26', 'AMS', 'NAMA AM',
+          0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0,
+          0, 0, 0, 0, 0
+        ]
+      ];
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      XLSX.utils.book_append_sheet(wb, ws, 'Master');
+      XLSX.writeFile(wb, 'template_master.xlsx');
+    }
+
+    function exportMasterExcel() {
+      if (typeof XLSX === 'undefined') return alert('Library SheetJS belum termuat.');
+      const headers = [
+        'tanggal', 'tgl_thn_lalu', 'tgl_bln_lalu', 'kode_am', 'nama_am',
+        'thn_lalu_dry', 'thn_lalu_khusus', 'thn_lalu_klik_dry', 'thn_lalu_klik_food', 'thn_lalu_apka',
+        'bln_lalu_dry', 'bln_lalu_khusus', 'bln_lalu_klik_dry', 'bln_lalu_klik_food', 'bln_lalu_apka',
+        'target_dry', 'target_khusus', 'target_klik_dry', 'target_klik_food', 'target_apka'
+      ];
+      const data = [headers];
+      const dates = Object.keys(masterStore).sort();
+      for (const dt of dates) {
+        const entry = getMasterEntryForDate(dt);
+        for (const r of entry.rows) {
+          data.push([
+            dt, entry.lastYearDate, entry.lastMonthDate, r.code, r.name,
+            r.lastYears.dry, r.lastYears.khusus, r.lastYears.klikDry, r.lastYears.klikFood, r.lastYears.apka,
+            r.lastMonths.dry, r.lastMonths.khusus, r.lastMonths.klikDry, r.lastMonths.klikFood, r.lastMonths.apka,
+            r.targets.dry, r.targets.khusus, r.targets.klikDry, r.targets.klikFood, r.targets.apka
+          ]);
+        }
+      }
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      XLSX.utils.book_append_sheet(wb, ws, 'Master');
+      XLSX.writeFile(wb, 'master_export.xlsx');
     }
 
     // =========================================================
@@ -1204,14 +1413,7 @@ function parseRowsMatrixToStore(matrixRows, fallbackDate) {
         })
         .filter(r => r.target > 0 || r.lastYear > 0 || r.lastMonth > 0);
 
-      const catDisplayMap = {
-        dry: 'Dry',
-        khusus: 'Prodsus',
-        klikDry: 'Klik Dry',
-        klikFood: 'Klik Food',
-        apka: 'Apka'
-      };
-     const activeCatNames = selectedCats.length
+      const activeCatNames = selectedCats.length
         ? selectedCats.join(' + ')
         : 'Belum ada kategori dipilih';
 
