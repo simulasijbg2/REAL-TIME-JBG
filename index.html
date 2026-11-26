@@ -328,7 +328,7 @@
       <div class="badge-rt">RT</div>
       <div>
         <h1>Laporan Real Time</h1>
-        <p>Resume AM Cabang Jombang</p>
+        <p>Resume AM Cabang jombang</p>
       </div>
     </div>
     <nav class="nav-tabs">
@@ -397,7 +397,7 @@
                 <label>Tampilan Kolom History</label>
                 <div class="checkbox-list" style="gap:6px;">
                   <label><input type="checkbox" id="showLastYearCol" checked onchange="processAll()"> Thn Lalu</label>
-                  <label><input type="checkbox" id="showLastMonthCol" checked onchange="processAll()"> Bln Lalu</label>
+                  <label><input type="checkbox" id="showLastMonthCol" onchange="processAll()"> Bln Lalu</label>
                 </div>
               </div>
             </div>
@@ -434,7 +434,7 @@
               <span>Preview Gambar Laporan</span>
               <div class="btn-group" style="margin:0;">
                 <button type="button" onclick="copyCanvasImage()">Salin Gambar</button>
-                <button type="button" class="btn-primary" onclick="downloadCanvasPNG()">Download PNG</button>
+                <button type="button" class="btn-primary" onclick="downloadCanvasPNG()">Download JPG</button>
               </div>
             </div>
             <div id="copyFeedback" class="status-bar" style="margin-top:0;margin-bottom:10px;display:none;"></div>
@@ -577,19 +577,15 @@
   </footer>
 
   <script>
-    const STORAGE_KEY = 'jbg_realtime_master_v24';
+    const STORAGE_KEY = 'jbg_realtime_master_v25';
     let masterStore = {};
 
     const CAT_KEY_MAP = {
       'dry': 'dry',
       'khusus': 'khusus',
-      'produk khusus': 'khusus',
       'prodsus': 'khusus',
       'klik dry': 'klikDry',
-      'klik_dry': 'klikDry',
-      'klikfood': 'klikFood',
       'klik food': 'klikFood',
-      'klik_food': 'klikFood',
       'apka': 'apka'
     };
 
@@ -730,11 +726,11 @@
         const [y, m, d] = s.split('-');
         return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
       }
-      const slashOrDash4 = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](20\d{2})$/);
-      if (slashOrDash4) {
-        const p1 = parseInt(slashOrDash4[1], 10);
-        const p2 = parseInt(slashOrDash4[2], 10);
-        const year = slashOrDash4[3];
+      const slashOrDash = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](20\d{2})$/);
+      if (slashOrDash) {
+        const p1 = parseInt(slashOrDash[1], 10);
+        const p2 = parseInt(slashOrDash[2], 10);
+        const year = slashOrDash[3];
         let dd = p1, mm = p2;
         if (p1 <= 12 && p2 > 12) {
           mm = p1;
@@ -748,13 +744,11 @@
         jun: '06', jul: '07', agu: '08', aug: '08', sep: '09',
         okt: '10', oct: '10', nov: '11', des: '12', dec: '12'
       };
-      const textMonth = s.match(/^(\d{1,2})[\s\-]+([A-Za-z]{3,9})[\s\-]+(\d{2}|\d{4})$/);
+      const textMonth = s.match(/^(\d{1,2})[\s\-]+([A-Za-z]{3,9})[\s\-]+(20\d{2})$/);
       if (textMonth) {
         const dd = textMonth[1].padStart(2, '0');
         const mm = monthMap[textMonth[2].slice(0, 3).toLowerCase()];
-        const rawYr = textMonth[3];
-        const yyyy = rawYr.length === 2 ? `20${rawYr}` : rawYr;
-        if (mm) return `${yyyy}-${mm}-${dd}`;
+        if (mm) return `${textMonth[3]}-${mm}-${dd}`;
       }
       return '';
     }
@@ -767,7 +761,7 @@
       const dmyMatch = text.match(/\b(\d{1,2}[\/\-]\d{1,2}[\/\-]20\d{2})\b/);
       if (dmyMatch) return normalizeIsoDate(dmyMatch[1]);
 
-      const textMonthMatch = text.match(/\b(\d{1,2}[\s\-]+[A-Za-z]{3,9}[\s\-]+(?:\d{2}|20\d{2}))\b/);
+      const textMonthMatch = text.match(/\b(\d{1,2}[\s\-]+[A-Za-z]{3,9}[\s\-]+20\d{2})\b/);
       if (textMonthMatch) return normalizeIsoDate(textMonthMatch[1]);
 
       return '';
@@ -775,9 +769,8 @@
 
     function parseLooseNumber(val) {
       if (typeof val === 'number') return isFinite(val) ? val : 0;
-      if (val === null || val === undefined || val === '') return 0;
+      if (!val) return 0;
       let str = String(val).trim();
-      if (!str || str === '-') return 0;
       const isNegative = /^\(.*\)$/.test(str);
       str = str.replace(/[^\d.-]/g, '');
       const num = parseFloat(str);
@@ -901,25 +894,47 @@
       const sampleRows = [
         {
           tanggal: '2026-11-26',
-          tgl_thn_lalu: '2025-11-26',
-          tgl_bln_lalu: '2026-10-29',
+          tgl_thn_lalu: '2025-11-27',
+          tgl_bln_lalu: '2026-10-26',
           kode_am: 'AMS',
           nama_am: 'ALMAS BUDI PRASETIYO',
-          thn_lalu_dry: 8972887,
-          thn_lalu_khusus: 480829,
-          thn_lalu_klik_dry: 0,
-          thn_lalu_klik_food: 0,
-          thn_lalu_apka: 0,
-          bln_lalu_dry: 10226560,
-          bln_lalu_khusus: 728230,
-          bln_lalu_klik_dry: 0,
-          bln_lalu_klik_food: 0,
-          bln_lalu_apka: 0,
-          target_dry: 10886328,
-          target_khusus: 946699,
-          target_klik_dry: 0,
-          target_klik_food: 0,
-          target_apka: 0
+          thn_lalu_dry: 13568739,
+          thn_lalu_khusus: 1950000,
+          thn_lalu_klik_dry: 820000,
+          thn_lalu_klik_food: 350000,
+          thn_lalu_apka: 260000,
+          bln_lalu_dry: 13720000,
+          bln_lalu_khusus: 2050000,
+          bln_lalu_klik_dry: 890000,
+          bln_lalu_klik_food: 390000,
+          bln_lalu_apka: 290000,
+          target_dry: 13893908,
+          target_khusus: 2150000,
+          target_klik_dry: 950000,
+          target_klik_food: 420000,
+          target_apka: 310000
+        },
+        {
+          tanggal: '2026-11-26',
+          tgl_thn_lalu: '2025-11-27',
+          tgl_bln_lalu: '2026-10-26',
+          kode_am: 'TOTAL',
+          nama_am: 'TOTAL',
+          thn_lalu_dry: 14083655,
+          thn_lalu_khusus: 2100000,
+          thn_lalu_klik_dry: 910000,
+          thn_lalu_klik_food: 400000,
+          thn_lalu_apka: 300000,
+          bln_lalu_dry: 14765000,
+          bln_lalu_khusus: 2200000,
+          bln_lalu_klik_dry: 980000,
+          bln_lalu_klik_food: 430000,
+          bln_lalu_apka: 320000,
+          target_dry: 15053684,
+          target_khusus: 2300000,
+          target_klik_dry: 1035000,
+          target_klik_food: 465000,
+          target_apka: 345000
         }
       ];
       const ws = XLSX.utils.json_to_sheet(sampleRows);
@@ -981,59 +996,41 @@
 
     function parseRowsMatrixToStore(matrixRows, fallbackDate) {
       if (!matrixRows || matrixRows.length === 0) return {};
-      const cleanHeader = h => String(h || '')
-        .toLowerCase()
-        .replace(/[\r\n]+/g, '_')
-        .replace(/\s+/g, '_')
-        .replace(/[^a-z0-9_]/g, '')
-        .replace(/_+/g, '_')
-        .replace(/^_|_$/g, '');
+      const firstCells = matrixRows[0].map(h => String(h || '').toLowerCase().replace(/[\r\n]+/g, '_').replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '').replace(/_+/g, '_').replace(/^_|_$/g, ''));
+      const hasHeader = firstCells.some(h => [
+        'tanggal', 'date', 'tgl', 'tgl_thn_lalu', 'tgl_bln_lalu', 'kode_am', 'kode', 'am',
+        'nama_am', 'nama', 'thn_lalu', 'thn_lalu_dry', 'bln_lalu', 'bln_lalu_dry',
+        'target', 'target_dry', 'target_khusus', 'target_prodsus'
+      ].includes(h));
 
-      const firstCells = matrixRows[0].map(cleanHeader);
-
-      const findColByRule = (ruleFn, fallbackIdx = -1) => {
-        const idx = firstCells.findIndex(ruleFn);
-        return idx >= 0 ? idx : fallbackIdx;
+      const findCol = (names, fallbackIdx) => {
+        if (!hasHeader) return fallbackIdx;
+        return firstCells.findIndex(h => names.includes(h));
       };
 
-      const isLY = h => /(thn|tahun|last_year|ly|histori_thn|hist_thn)/.test(h) && !/tgl|tanggal|date/.test(h);
-      const isLM = h => /(bln|bulan|last_month|lm|histori_bln|hist_bln)/.test(h) && !/tgl|tanggal|date/.test(h);
-      const isTgt = h => /(target|tgt)/.test(h) && !/tgl|tanggal|date/.test(h);
+      const idxDate = findCol(['tanggal', 'date', 'tgl'], 0);
+      const idxRefLY = findCol(['tgl_thn_lalu', 'tanggal_thn_lalu', 'tgl_tahun_lalu', 'tanggal_tahun_lalu', 'ref_thn_lalu'], -1);
+      const idxRefLM = findCol(['tgl_bln_lalu', 'tanggal_bln_lalu', 'tgl_bulan_lalu', 'tanggal_bulan_lalu', 'ref_bln_lalu'], -1);
+      const idxCode = findCol(['kode_am', 'kode', 'am'], 1);
+      const idxName = findCol(['nama_am', 'nama'], 2);
 
-      const isDry = h => /dry/.test(h) && !/klik/.test(h);
-      const isKhusus = h => /(khusus|prodsus)/.test(h);
-      const isKlikDry = h => /klik_?dry/.test(h);
-      const isKlikFood = h => /klik_?food/.test(h);
-      const isApka = h => /apka/.test(h);
+      const idxLYDry = findCol(['thn_lalu_dry', 'thnlaludry', 'thn_lalu', 'thnlalu', 'histori_thn_lalu', 'last_year'], 3);
+      const idxLYKhusus = findCol(['thn_lalu_khusus', 'thnlalukhusus', 'thn_lalu_prodsus', 'thnlaluprodsus'], -1);
+      const idxLYKlikDry = findCol(['thn_lalu_klik_dry', 'thnlaluklikdry'], -1);
+      const idxLYKlikFood = findCol(['thn_lalu_klik_food', 'thnlaluklikfood'], -1);
+      const idxLYApka = findCol(['thn_lalu_apka', 'thnlaluapka'], -1);
 
-      const hasHeader = firstCells.some(h =>
-        ['tanggal', 'date', 'tgl', 'kode_am', 'kode', 'am', 'nama_am', 'nama'].includes(h) ||
-        isLY(h) || isLM(h) || isTgt(h)
-      );
+      const idxLMDry = findCol(['bln_lalu_dry', 'blnlaludry', 'bln_lalu', 'blnlalu', 'bulan_lalu', 'last_month'], -1);
+      const idxLMKhusus = findCol(['bln_lalu_khusus', 'blnlalukhusus', 'bln_lalu_prodsus', 'blnlaluprodsus'], -1);
+      const idxLMKlikDry = findCol(['bln_lalu_klik_dry', 'blnlaluklikdry'], -1);
+      const idxLMKlikFood = findCol(['bln_lalu_klik_food', 'blnlaluklikfood'], -1);
+      const idxLMApka = findCol(['bln_lalu_apka', 'blnlaluapka'], -1);
 
-      const idxDate = hasHeader ? findColByRule(h => ['tanggal', 'date', 'tgl'].includes(h), 0) : 0;
-      const idxRefLY = hasHeader ? findColByRule(h => /(tgl|tanggal|date).*(thn|tahun|ly)/.test(h), -1) : -1;
-      const idxRefLM = hasHeader ? findColByRule(h => /(tgl|tanggal|date).*(bln|bulan|lm)/.test(h), -1) : -1;
-      const idxCode = hasHeader ? findColByRule(h => ['kode_am', 'kode', 'am'].includes(h), 1) : 1;
-      const idxName = hasHeader ? findColByRule(h => ['nama_am', 'nama'].includes(h), 2) : 2;
-
-      const idxLYDry = hasHeader ? findColByRule(h => isLY(h) && (isDry(h) || /^(thn_?lalu|tahun_?lalu|last_?year)$/.test(h)), -1) : 3;
-      const idxLYKhusus = hasHeader ? findColByRule(h => isLY(h) && isKhusus(h), -1) : -1;
-      const idxLYKlikDry = hasHeader ? findColByRule(h => isLY(h) && isKlikDry(h), -1) : -1;
-      const idxLYKlikFood = hasHeader ? findColByRule(h => isLY(h) && isKlikFood(h), -1) : -1;
-      const idxLYApka = hasHeader ? findColByRule(h => isLY(h) && isApka(h), -1) : -1;
-
-      const idxLMDry = hasHeader ? findColByRule(h => isLM(h) && (isDry(h) || /^(bln_?lalu|bulan_?lalu|last_?month)$/.test(h)), -1) : -1;
-      const idxLMKhusus = hasHeader ? findColByRule(h => isLM(h) && isKhusus(h), -1) : -1;
-      const idxLMKlikDry = hasHeader ? findColByRule(h => isLM(h) && isKlikDry(h), -1) : -1;
-      const idxLMKlikFood = hasHeader ? findColByRule(h => isLM(h) && isKlikFood(h), -1) : -1;
-      const idxLMApka = hasHeader ? findColByRule(h => isLM(h) && isApka(h), -1) : -1;
-
-      const idxTgtDry = hasHeader ? findColByRule(h => isTgt(h) && (isDry(h) || /^(target|tgt)$/.test(h)), -1) : 4;
-      const idxTgtKhusus = hasHeader ? findColByRule(h => isTgt(h) && isKhusus(h), -1) : -1;
-      const idxTgtKlikDry = hasHeader ? findColByRule(h => isTgt(h) && isKlikDry(h), -1) : -1;
-      const idxTgtKlikFood = hasHeader ? findColByRule(h => isTgt(h) && isKlikFood(h), -1) : -1;
-      const idxTgtApka = hasHeader ? findColByRule(h => isTgt(h) && isApka(h), -1) : -1;
+      const idxTgtDry = findCol(['target_dry', 'tgtdry', 'target', 'tgt'], idxLMDry >= 0 ? 5 : 4);
+      const idxTgtKhusus = findCol(['target_khusus', 'tgtkhusus', 'target_prodsus', 'tgtprodsus', 'prodsus', 'khusus'], -1);
+      const idxTgtKlikDry = findCol(['target_klik_dry', 'tgtklikdry', 'klik_dry'], -1);
+      const idxTgtKlikFood = findCol(['target_klik_food', 'tgtklikfood', 'klik_food'], -1);
+      const idxTgtApka = findCol(['target_apka', 'tgtapka', 'apka'], -1);
 
       const startIdx = hasHeader ? 1 : 0;
       const finalByDate = {};
@@ -1222,7 +1219,7 @@
       }
 
       try {
-        const cacheBust = '?t=' + Date.now() + '&r=' + Math.random().toString(36).slice(2);
+        const cacheBust = '?t=' + Date.now();
         const res = await fetch('./master.xlsx' + cacheBust, { cache: 'no-store' });
         if (res.ok && typeof XLSX !== 'undefined') {
           const buf = await res.arrayBuffer();
@@ -1288,8 +1285,8 @@
     }
 
     function normalizeCategoryLabel(cat) {
-      const c = String(cat || '').toLowerCase().replace(/\s+/g, ' ').trim();
-      if (c === 'prodsus' || c === 'produk khusus') return 'khusus';
+      const c = String(cat || '').toLowerCase().trim();
+      if (c === 'prodsus') return 'khusus';
       return c;
     }
 
@@ -1331,12 +1328,6 @@
     }
 
     function processAll() {
-
-      const sampleInfo = combined[0]
-  ? ` | ${combined[0].code}: LY=${fmtNum(combined[0].lastYear)}, LM=${fmtNum(combined[0].lastMonth)}, TGT=${fmtNum(combined[0].target)}`
-  : '';
-notice.className = 'status-bar ok';
-notice.textContent = `Master aktif ${formatHeaderDate(reportDate)} (Thn Lalu: ${lastYearLabel} • Bln Lalu: ${lastMonthLabel}) • ${activeCatNames}${sampleInfo}.`;
       const rawText = document.getElementById('rawInput').value;
 
       const autoSyncDate = document.getElementById('autoSyncDateFromText').checked;
@@ -1403,28 +1394,26 @@ notice.textContent = `Master aktif ${formatHeaderDate(reportDate)} (Thn Lalu: ${
             spd: spdMap[m.code] || 0
           };
         })
-        .filter(r => r.target > 0 || r.lastYear > 0 || r.lastMonth > 0 || r.spd > 0);
+        .filter(r => r.target > 0 || r.lastYear > 0 || r.lastMonth > 0);
 
       const catDisplayMap = {
         dry: 'Dry',
-        khusus: 'Khusus',
+        khusus: 'Prodsus',
         klikDry: 'Klik Dry',
         klikFood: 'Klik Food',
         apka: 'Apka'
       };
-      const effectiveLabel = effectiveCatKeys.map(k => catDisplayMap[k] || k).join(' + ');
-      const activeCatNames = selectedCats.length
+     const activeCatNames = selectedCats.length
         ? selectedCats.join(' + ')
         : 'Belum ada kategori dipilih';
 
-      const firstRow = combined[0];
-      const sampleInfo = firstRow
-        ? ` | Contoh ${firstRow.code}: LY=${fmtNum(firstRow.lastYear)}, LM=${fmtNum(firstRow.lastMonth)}, TGT=${fmtNum(firstRow.target)}`
+      const sampleInfo = combined[0]
+        ? ` | ${combined[0].code}: LY=${fmtNum(combined[0].lastYear)}, LM=${fmtNum(combined[0].lastMonth)}, TGT=${fmtNum(combined[0].target)}`
         : '';
 
       if (masterEntry.found) {
         notice.className = 'status-bar ok';
-        notice.textContent = `Master aktif ${formatHeaderDate(reportDate)} (Thn Lalu: ${lastYearLabel} • Bln Lalu: ${lastMonthLabel}) • Acuan: ${effectiveLabel}${sampleInfo}.`;
+        notice.textContent = `Master aktif ${formatHeaderDate(reportDate)} (Thn Lalu: ${lastYearLabel} • Bln Lalu: ${lastMonthLabel}) • ${activeCatNames}${sampleInfo}.`;
       } else {
         notice.className = 'status-bar warn';
         notice.textContent = `Belum ada data master untuk tanggal ${formatHeaderDate(reportDate)} pada file master.xlsx.`;
@@ -1780,7 +1769,7 @@ notice.textContent = `Master aktif ${formatHeaderDate(reportDate)} (Thn Lalu: ${
           showCopyFeedback('Gambar tabel berhasil disalin! Silakan langsung Paste (Ctrl+V) di WhatsApp.');
         });
       } catch (err) {
-        showCopyFeedback('Browser memblokir salin gambar langsung. Silakan gunakan tombol "Download PNG".', false);
+        showCopyFeedback('Browser memblokir salin gambar langsung. Silakan gunakan tombol "Download JPG".', false);
       }
     }
 
