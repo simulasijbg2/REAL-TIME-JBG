@@ -1331,6 +1331,12 @@
     }
 
     function processAll() {
+
+      const sampleInfo = combined[0]
+  ? ` | ${combined[0].code}: LY=${fmtNum(combined[0].lastYear)}, LM=${fmtNum(combined[0].lastMonth)}, TGT=${fmtNum(combined[0].target)}`
+  : '';
+notice.className = 'status-bar ok';
+notice.textContent = `Master aktif ${formatHeaderDate(reportDate)} (Thn Lalu: ${lastYearLabel} • Bln Lalu: ${lastMonthLabel}) • ${activeCatNames}${sampleInfo}.`;
       const rawText = document.getElementById('rawInput').value;
 
       const autoSyncDate = document.getElementById('autoSyncDateFromText').checked;
